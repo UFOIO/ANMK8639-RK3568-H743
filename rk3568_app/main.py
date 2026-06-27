@@ -68,7 +68,7 @@ def main():
     camera = CameraCapture(config.camera, app_state=_app_state)
     decision = DecisionEngine(config.decision, event_bus, _app_state)
     upgrade = UpgradeManager({}, stm32, event_bus)
-    web_ui = WebUI(config.get("web_ui", {}), _app_state, event_bus, stm32)
+    web_ui = WebUI(config.get("web_ui", {}), _app_state, event_bus, stm32, upgrade_mgr=upgrade)
     watchdog = Watchdog(config.watchdog, event_bus)
 
     event_bus.subscribe("DECISION_ACTION", lambda d: _execute_action(d, mqtt, stm32))

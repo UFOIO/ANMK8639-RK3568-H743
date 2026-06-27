@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANMK8639 机库控制台</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#21262d;--text:#c9d1d9;--dim:#8b949e;--green:#3fb950;--yellow:#d2991d;--red:#da3633;--blue:#58a6ff;--accent:#1f6feb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font:13px/1.5 Segoe UI,Microsoft YaHei,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+#topbar .title{display:flex;align-items:center;gap:12px}
+#topbar h1{font-size:16px;font-weight:600}
+#topbar h1 span{color:var(--blue)}
+.hb-dot{width:14px;height:14px;border-radius:50%;position:relative}
+.hb-dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;animation:pulse 1.2s infinite}
+.hb-dot.ok{background:var(--green)}.hb-dot.ok::after{border:2px solid var(--green)}
+.hb-dot.warn{background:var(--yellow)}.hb-dot.warn::after{border:2px solid var(--yellow)}
+.hb-dot.bad{background:var(--red)}.hb-dot.bad::after{border:2px solid var(--red)}
+@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(2.2);opacity:0}}
+#uptime-display{font-size:12px;color:var(--dim);font-family:monospace}
+nav{display:flex;padding:0 8px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;flex-wrap:wrap}
+nav button{padding:9px 12px;border:none;background:none;color:var(--dim);cursor:pointer;font-size:11px;border-bottom:2px solid transparent;white-space:nowrap}
+nav button:hover{color:var(--text)}
+nav button.active{color:var(--blue);border-bottom-color:var(--blue)}
+main{padding:16px;max-width:1500px;margin:0 auto}
+.tab{display:none}.tab.active{display:block}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.grid3{grid-template-columns:repeat(2,1fr)}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px}
+.card h3{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.card .val{font-size:28px;font-weight:600;font-family:monospace}
+.card .sub{font-size:11px;color:var(--dim);margin-top:4px}
+.card .fresh{font-size:10px;margin-top:4px;font-family:monospace}
+.card .fresh.live{color:var(--green)}.card .fresh.stale{color:var(--yellow)}.card .fresh.dead{color:var(--red)}
+.hcard{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px}
+.hcard .icon{font-size:24px}.hcard .info{flex:1}
+.hcard .label{font-size:11px;color:var(--dim)}
+.hcard .state{font-size:14px;font-weight:600}
+.hcard .state.on{color:var(--green)}.hcard .state.off{color:var(--red)}
+.hcard .since{font-size:10px;color:var(--dim);font-family:monospace;margin-top:2px}
+#toast-container{position:fixed;top:70px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-size:12px;max-width:400px;box-shadow:0 4px 12px rgba(0,0,0,0.4);animation:slideIn .3s;display:flex;align-items:flex-start;gap:8px}
+.toast.warn{border-left:3px solid var(--yellow)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--blue)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast .tmsg{flex:1}.toast .tclose{color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
+.event-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:monospace}
+.event-row .lev{padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;min-width:42px;text-align:center}
+.event-row .lev.info{background:#1a3a5c;color:var(--blue)}.event-row .lev.warn{background:#3d2e00;color:var(--yellow)}.event-row .lev.error{background:#3d1a1a;color:var(--red)}
+.event-row .ets{color:var(--dim);white-space:nowrap}.event-row .esrc{color:var(--blue);min-width:60px}.event-row .emsg{flex:1}
+.cfg-section{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
+.cfg-section h4{font-size:12px;color:var(--blue);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.cfg-row{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
+.cfg-row label{font-size:11px;color:var(--dim);min-width:70px}
+.cfg-row input,.cfg-row select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:4px;font-size:12px;font-family:monospace}
+.cfg-row input:focus,.cfg-row select:focus{outline:none;border-color:var(--blue)}
+.cfg-row input.t{min-width:180px}.cfg-row input.n{width:70px}
+.btn{background:var(--accent);color:white;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn:hover{opacity:0.85}.btn.small{padding:4px 10px;font-size:11px}.btn.danger{background:var(--red)}.btn.green{background:var(--green);color:#000}
+.prog-bar{height:8px;background:var(--border);border-radius:4px;margin:8px 0;overflow:hidden}
+.prog-bar .fill{height:100%;background:var(--blue);border-radius:4px;transition:width .3s}
+.gauge{display:flex;align-items:center;gap:12px;padding:6px 0}
+.gauge .bar{flex:1;height:20px;background:var(--border);border-radius:10px;overflow:hidden}
+.gauge .bar .fill{height:100%;border-radius:10px;transition:width .5s}
+.gauge .gval{font-family:monospace;font-size:14px;min-width:55px;text-align:right}
+.snap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.snap-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.snap-card img{width:100%;height:130px;object-fit:cover;display:block}
+.snap-card .sinfo{padding:6px 10px;font-size:10px;color:var(--dim)}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th,.data-table td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.data-table th{color:var(--dim);font-weight:600;font-size:10px;text-transform:uppercase}
+.badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.badge.green{background:#1a3d1a;color:var(--green)}.badge.yellow{background:#3d2e00;color:var(--yellow)}
+.badge.red{background:#3d1a1a;color:var(--red)}.badge.blue{background:#1a3a5c;color:var(--blue)}
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-header h3{font-size:13px;font-weight:600}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.live{background:var(--green)}.status-dot.dead{background:var(--red)}.status-dot.warn{background:var(--yellow)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.info-item{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px}
+.info-item .ilabel{font-size:10px;color:var(--dim)}.info-item .ival{font-size:16px;font-weight:600;font-family:monospace}
+pre.log-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:11px;font-family:monospace;white-space:pre-wrap;max-height:500px;overflow-y:auto}
+</style>
+</head>
+<body>
+<div id="topbar">
+<div class="title"><div class="hb-dot ok" id="hb-dot"></div><h1>ANMK8639 <span>机库控制台</span></h1></div>
+<div id="uptime-display">--</div>
+</div>
+<nav>
+<button class="active" onclick="switchTab('status',this)">STATUS</button>
+<button onclick="switchTab('drone',this)">DRONE</button>
+<button onclick="switchTab('hangar',this)">HANGAR</button>
+<button onclick="switchTab('events',this)">EVENTS</button>
+<button onclick="switchTab('config',this)">CONFIG</button>
+<button onclick="switchTab('cmd',this)">CMD</button>
+<button onclick="switchTab('logs',this)">LOGS</button>
+<button onclick="switchTab('system',this)">SYSTEM</button>
+<button onclick="switchTab('camera',this)">CAMERA</button>
+<button onclick="switchTab('upgrade',this)">UPGRADE</button>
+<button onclick="switchTab('decision',this)">RULES</button>
+</nav>
+<main>
+<div class="tab active" id="tab-status">
+<div class="grid4">
+<div class="card"><h3>MQTT</h3><div class="val" id="s-mqtt">--</div><div class="sub">地面站</div><div class="fresh dead" id="f-mqtt">--</div></div>
+<div class="card"><h3>MAVLink</h3><div class="val" id="s-mav">--</div><div class="sub">无人机</div><div class="fresh dead" id="f-mav">--</div></div>
+<div class="card"><h3>STM32</h3><div class="val" id="s-stm">--</div><div class="sub">下位机</div><div class="fresh dead" id="f-stm">--</div></div>
+<div class="card"><h3>Camera</h3><div class="val" id="s-cam">--</div><div class="sub">RTSP</div><div class="fresh dead" id="f-cam">--</div></div>
+</div>
+<div class="grid4" id="health-cards" style="margin-top:14px">Loading...</div>
+</div>
+
+<div class="tab" id="tab-drone">
+<div class="sec-header"><h3>Drone Telemetry</h3><span class="badge blue" id="drone-mode">--</span></div>
+<div class="info-grid" id="drone-summary">Loading...</div>
+<div class="card" style="margin-top:14px"><h3>GPS Satellites</h3><div id="drone-gps">--</div></div>
+<div class="card" style="margin-top:14px"><h3>Flight Data</h3><table class="data-table"><thead><tr><th>Param</th><th>Value</th><th>Param</th><th>Value</th></tr></thead><tbody id="drone-detail"></tbody></table></div>
+</div>
+
+<div class="tab" id="tab-hangar">
+<div class="sec-header"><h3>Hangar Status</h3><span id="hangar-alarm-badge"></span></div>
+<div class="grid4" id="hangar-cards">Loading...</div>
+<div class="card" style="margin-top:14px"><h3>Sensors</h3><table class="data-table"><thead><tr><th>Sensor</th><th>Value</th><th>Status</th></tr></thead><tbody id="hangar-sensors"></tbody></table></div>
+</div>
+
+<div class="tab" id="tab-events">
+<div class="sec-header"><h3>Event Log</h3>
+<div><button class="btn small" onclick="filterEvents('all')" id="ef-all" style="background:var(--blue)">All</button>
+<button class="btn small" onclick="filterEvents('info')" id="ef-info">Info</button>
+<button class="btn small" onclick="filterEvents('warn')" id="ef-warn">Warn</button>
+<button class="btn small" onclick="filterEvents('error')" id="ef-error">Error</button></div>
+</div>
+<div id="events-list">Loading...</div>
+</div>
+
+<div class="tab" id="tab-config">
+<div class="sec-header"><h3>System Config</h3><button class="btn green" onclick="saveConfig()">Save Config</button></div>
+<div class="cfg-section"><h4>MQTT Ground Station</h4>
+<div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-mqtt-enabled" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Broker</label><input type="text" class="t" id="cfg-mqtt-broker" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mqtt-port" onchange="cfgChanged()" value="1883"></div>
+<div class="cfg-row"><label>Username</label><input type="text" class="t" id="cfg-mqtt-username" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Password</label><input type="text" class="t" id="cfg-mqtt-password" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Topic Prefix</label><input type="text" class="t" id="cfg-mqtt-topic_prefix" onchange="cfgChanged()" value="hangar/"></div>
+</div>
+<div class="cfg-section"><h4>MAVLink Drone</h4>
+<div class="cfg-row"><label>4G Module IP</label><input type="text" class="t" id="cfg-mavlink-host" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mavlink-port" onchange="cfgChanged()" value="5760"></div>
+</div>
+<div class="cfg-section"><h4>Camera RTSP</h4>
+<div class="cfg-row"><label>RTSP URL</label><input type="text" class="t" id="cfg-camera-rtsp_url" onchange="cfgChanged()" style="min-width:400px"></div>
+</div>
+<div class="cfg-section"><h4>STM32 Serial</h4>
+<div class="cfg-row"><label>Device</label><input type="text" class="t" id="cfg-stm32-port" onchange="cfgChanged()" value="/dev/ttyACM0"></div>
+<div class="cfg-row"><label>Baudrate</label><input type="number" class="n" id="cfg-stm32-baudrate" onchange="cfgChanged()" value="115200"></div>
+</div>
+<div class="cfg-section"><h4>Decision Engine</h4>
+<div class="cfg-row"><label>Auto Open on RTL</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl" onchange="cfgChanged()" checked></div>
+<div class="cfg-row"><label>Low Battery (%)</label><input type="number" class="n" id="cfg-decision-low_battery_threshold" onchange="cfgChanged()" value="20"></div>
+<div class="cfg-row"><label>Lost Timeout (s)</label><input type="number" class="n" id="cfg-decision-lost_timeout" onchange="cfgChanged()" value="30"></div>
+</div>
+<div class="cfg-section"><h4>Upgrade IAP</h4>
+<div class="cfg-row"><label>Block Size</label><input type="number" class="n" id="cfg-upgrade-block_size" onchange="cfgChanged()" value="1024"></div>
+<div class="cfg-row"><label>Block Timeout</label><input type="number" class="n" id="cfg-upgrade-block_timeout" onchange="cfgChanged()" value="3"></div>
+</div>
+<div id="cfg-save-status" style="margin-top:10px"></div>
+</div>
+
+<div class="tab" id="tab-cmd">
+<div class="sec-header"><h3>STM32 Commands</h3></div>
+<div class="grid3">
+<div class="card" style="text-align:center"><h3>Door Control</h3>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+<button class="btn green" onclick="sendCmd('OPEN_DOOR')">Open</button>
+<button class="btn danger" onclick="sendCmd('CLOSE_DOOR')">Close</button></div></div>
+<div class="card" style="text-align:center"><h3>Lock Control</h3>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+<button class="btn" onclick="sendCmd('LOCK')">Lock</button>
+<button class="btn green" onclick="sendCmd('UNLOCK')">Unlock</button></div></div>
+<div class="card" style="text-align:center"><h3>System</h3>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+<button class="btn small danger" onclick="restartService()">Restart</button></div></div>
+</div>
+<div id="cmd-result" style="margin-top:10px"></div>
+</div>
+
+<div class="tab" id="tab-logs">
+<div class="sec-header"><h3>App Logs</h3><button class="btn small" onclick="loadLogs()">Refresh</button></div>
+<pre class="log-box" id="logs-content">Loading...</pre>
+</div>
+
+<div class="tab" id="tab-system">
+<div class="sec-header"><h3>System Resources</h3><span id="sys-time"></span></div>
+<div class="grid2">
+<div class="card"><h3>CPU</h3>
+<div class="gauge"><div class="bar"><div class="fill" id="sys-cpu-fill" style="width:0%;background:var(--green)"></div></div><div class="gval" id="sys-cpu-val">--</div></div>
+<div id="sys-cpu-load" style="font-size:10px;color:var(--dim)"></div></div>
+<div class="card"><h3>Memory</h3>
+<div class="gauge"><div class="bar"><div class="fill" id="sys-ram-fill" style="width:0%;background:var(--blue)"></div></div><div class="gval" id="sys-ram-val">--</div></div>
+<div id="sys-ram-detail" style="font-size:10px;color:var(--dim)"></div></div>
+<div class="card"><h3>Disk</h3>
+<div class="gauge"><div class="bar"><div class="fill" id="sys-disk-fill" style="width:0%;background:var(--yellow)"></div></div><div class="gval" id="sys-disk-val">--</div></div>
+<div id="sys-disk-detail" style="font-size:10px;color:var(--dim)"></div></div>
+<div class="card"><h3>Process</h3>
+<div id="sys-uptime" style="font-size:20px;font-weight:600;font-family:monospace">--</div>
+<div id="sys-pid" style="font-size:10px;color:var(--dim);margin-top:4px"></div></div>
+</div>
+</div>
+
+<div class="tab" id="tab-camera">
+<div class="sec-header"><h3>Camera Snapshots</h3>
+<div><button class="btn small" onclick="loadSnapshots()">Refresh</button>
+<button class="btn small green" onclick="captureSnapshot()">Capture</button></div>
+</div>
+<div class="snap-grid" id="snap-grid">Loading...</div>
+</div>
+
+<div class="tab" id="tab-upgrade">
+<div class="sec-header"><h3>STM32 IAP Upgrade</h3></div>
+<div class="card"><h3>Upgrade Status</h3>
+<div style="font-size:16px;margin:10px 0" id="upg-state">Idle</div>
+<div class="prog-bar"><div class="fill" id="upg-progress" style="width:0%"></div></div>
+<div id="upg-info" style="font-size:11px;color:var(--dim)">--</div></div>
+<div class="card" style="margin-top:12px"><h3>Firmware Flash</h3>
+<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
+<input type="text" class="t" id="upg-path" placeholder="/path/to/firmware.bin" style="min-width:250px">
+<button class="btn green" onclick="startUpgrade()">Start Upgrade</button>
+<button class="btn danger small" onclick="cancelUpgrade()">Cancel</button></div>
+<div id="upg-result" style="margin-top:10px;font-size:11px"></div></div>
+</div>
+
+<div class="tab" id="tab-decision">
+<div class="sec-header"><h3>Decision Rules</h3><button class="btn small" onclick="loadDecisionRules()">Refresh</button></div>
+<div id="decision-rules">Loading...</div>
+</div>
+
+</main>
+<div id="toast-container"></div>
+<script>
+function switchTab(n,b){document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});document.getElementById('tab-'+n).classList.add('active');document.querySelectorAll('nav button').forEach(function(x){x.classList.remove('active')});if(b)b.classList.add('active');if(n==='drone')loadDrone();if(n==='hangar')loadHangar();if(n==='events')loadEvents();if(n==='config')loadConfigForm();if(n==='logs')loadLogs();if(n==='system')loadSystem();if(n==='camera')loadSnapshots();if(n==='upgrade')loadUpgradeStatus();if(n==='decision')loadDecisionRules()}
+var _tid=0;
+function showToast(m,l){l=l||'info';var c=document.getElementById('toast-container');var d=document.createElement('div');d.className='toast '+l;var s=document.createElement('span');s.className='tmsg';s.textContent=m;var x=document.createElement('span');x.className='tclose';x.textContent='x';x.style.cursor='pointer';x.onclick=function(){d.remove()};d.appendChild(s);d.appendChild(x);c.appendChild(d);var id=_tid++;setTimeout(function(){var el=document.getElementById('toast-'+id);return;},5000)}
+var _prevH='';
+function pollHealth(){fetch('/api/health').then(function(r){return r.json()}).then(function(h){var dot=document.getElementById('hb-dot');dot.className='hb-dot '+(h.overall==='healthy'?'ok':h.overall==='degraded'?'warn':'bad');var u=Math.floor(h.uptime||0);document.getElementById('uptime-display').textContent='RUN '+Math.floor(u/60)+'m '+Math.floor(u%60)+'s';var sc=['mqtt','mavlink','stm32','camera'];for(var i=0;i<sc.length;i++){var k=sc[i];var d=h[k]||{};var conn=d.connected;if(k==='camera')conn=d.last_snapshot_sec!=null&&d.last_snapshot_sec<30;document.getElementById('s-'+k.substring(0,3)).textContent=conn?'ON':'OFF';var f=document.getElementById('f-'+k.substring(0,3));var sec=d.last_hb_sec||d.last_msg_sec||d.last_status_sec||d.last_snapshot_sec;if(sec!=null){var ago=Math.floor(Date.now()/1000-sec);f.textContent=ago+'s ago';f.className='fresh '+(ago<10?'live':ago<30?'stale':'dead')}else{f.textContent='--';f.className='fresh dead'}}var cards=[{k:'mavlink',icon:'SAT',label:'MAVLink'},{k:'mqtt',icon:'NET',label:'MQTT'},{k:'stm32',icon:'MCU',label:'STM32'},{k:'camera',icon:'CAM',label:'Camera'}];var hc=document.getElementById('health-cards');var ht='';for(var i=0;i<cards.length;i++){var c=cards[i];var d=h[c.k]||{};var conn=d.connected;if(c.k==='camera')conn=d.last_snapshot_sec!=null&&d.last_snapshot_sec<30;var cs=conn?'on':'off';var ct=conn?'ONLINE':'OFFLINE';var sec=d.last_hb_sec||d.last_msg_sec||d.last_status_sec||d.last_snapshot_sec;var ago=sec!=null?Math.floor(Date.now()/1000-sec)+'s ago':'never';ht+='<div class="hcard"><div class="icon">'+c.icon+'</div><div class="info"><div class="label">'+c.label+'</div><div class="state '+cs+'">'+ct+'</div><div class="since">'+ago+'</div></div></div>'}hc.innerHTML=ht;var cur=JSON.stringify(h.overall);if(_prevH&&_prevH!==cur){var msg='';if(h.overall==='critical')msg='CRITICAL: System degraded!';else if(h.overall==='degraded')msg='WARNING: Partial connection loss';else msg='OK: System recovered';showToast(msg,h.overall==='healthy'?'info':h.overall==='degraded'?'warn':'error')}_prevH=cur}).catch(function(){})}
+setInterval(pollHealth,3000);pollHealth();
+
+function loadDrone(){fetch('/api/status').then(function(r){return r.json()}).then(function(s){var d=s.drone||{};var m=d.mode||'--';var alt=d.alt||'--';var gs=d.groundspeed||'--';var bat=d.battery||'--';var lat=d.lat||'--';var lon=d.lon||'--';var sat=d.satellites||'--';var hdg=d.heading||'--';var vs=d.vertical_speed||'--';var fix=d.fix_type||'--';var arm=d.armed?'ARMED':'DISARMED';document.getElementById('drone-mode').textContent=m;document.getElementById('drone-summary').innerHTML='<div class="info-item"><div class="ilabel">Mode</div><div class="ival">'+m+'</div></div><div class="info-item"><div class="ilabel">Alt(m)</div><div class="ival">'+alt+'</div></div><div class="info-item"><div class="ilabel">Speed(m/s)</div><div class="ival">'+gs+'</div></div><div class="info-item"><div class="ilabel">Batt(%)</div><div class="ival">'+bat+'</div></div><div class="info-item"><div class="ilabel">Sats</div><div class="ival">'+sat+'</div></div><div class="info-item"><div class="ilabel">State</div><div class="ival">'+arm+'</div></div>';document.getElementById('drone-gps').textContent='Lat: '+lat+' Lon: '+lon+' HDG: '+hdg+' Fix: '+fix;document.getElementById('drone-detail').innerHTML='<tr><td>V Speed</td><td>'+vs+' m/s</td><td>Heading</td><td>'+hdg+'</td></tr><tr><td>Fix</td><td>'+fix+'</td><td>Sats</td><td>'+sat+'</td></tr><tr><td>Lat</td><td>'+lat+'</td><td>Lon</td><td>'+lon+'</td></tr>'}).catch(function(){})}
+loadDrone();
+
+function loadHangar(){fetch('/api/status').then(function(r){return r.json()}).then(function(s){var h=s.hangar||{};document.getElementById('hangar-cards').innerHTML='<div class="card"><h3>Door</h3><div class="val">'+(h.door||'--')+'</div></div><div class="card"><h3>Lock</h3><div class="val">'+(h.lock||'--')+'</div></div><div class="card"><h3>Temp</h3><div class="val">'+(h.temperature||'--')+'C</div></div><div class="card"><h3>Humidity</h3><div class="val">'+(h.humidity||'--')+'%</div></div>';var al=h.alarms||[];document.getElementById('hangar-alarm-badge').innerHTML=al.length>0?'<span class="badge red">'+al.length+' ALARMS</span>':'<span class="badge green">OK</span>';document.getElementById('hangar-sensors').innerHTML='<tr><td>Temperature</td><td>'+(h.temperature||'--')+'C</td><td><span class="badge green">OK</span></td></tr><tr><td>Humidity</td><td>'+(h.humidity||'--')+'%</td><td><span class="badge green">OK</span></td></tr><tr><td>Door</td><td>'+(h.door||'--')+'</td><td><span class="badge '+(h.door==='OPEN'?'yellow':'green')+'">'+(h.door||'--')+'</span></td></tr><tr><td>Lock</td><td>'+(h.lock||'--')+'</td><td><span class="badge '+(h.lock==='LOCKED'?'green':'red')+'">'+(h.lock||'--')+'</span></td></tr>'}).catch(function(){})}
+loadHangar();
+
+var _evtFilter='all';
+function filterEvents(l){_evtFilter=l;['all','info','warn','error'].forEach(function(k){var b=document.getElementById('ef-'+k);if(b)b.style.background=k===l?'var(--blue)':''});loadEvents()}
+function loadEvents(){fetch('/api/events?count=100').then(function(r){return r.json()}).then(function(d){var evs=d.events||[];var ht='';for(var i=evs.length-1;i>=0;i--){var e=evs[i];if(_evtFilter!=='all'&&e.level!==_evtFilter)continue;var dt=new Date(e.ts*1000);var ts=dt.toTimeString().substring(0,8);ht+='<div class="event-row"><span class="lev '+e.level+'">'+e.level.toUpperCase()+'</span><span class="ets">'+ts+'</span><span class="esrc">'+e.source+'</span><span class="emsg">'+e.message+'</span></div>'}document.getElementById('events-list').innerHTML=ht||'<div style="color:var(--dim);padding:20px;text-align:center">No events</div>'}).catch(function(){})}
+loadEvents();
+
+function loadConfigForm(){fetch('/api/config').then(function(r){return r.json()}).then(function(cfg){var mq=cfg.mqtt||{};document.getElementById('cfg-mqtt-enabled').checked=!!mq.enabled;document.getElementById('cfg-mqtt-broker').value=mq.broker||'';document.getElementById('cfg-mqtt-port').value=mq.port||1883;document.getElementById('cfg-mqtt-username').value=mq.username||'';document.getElementById('cfg-mqtt-password').value=mq.password||'';document.getElementById('cfg-mqtt-topic_prefix').value=mq.topic_prefix||'hangar/';var ml=cfg.mavlink||{};document.getElementById('cfg-mavlink-host').value=ml.host||'';document.getElementById('cfg-mavlink-port').value=ml.port||5760;var cam=cfg.camera||{};document.getElementById('cfg-camera-rtsp_url').value=cam.rtsp_url||'';var st=cfg.stm32||{};document.getElementById('cfg-stm32-port').value=st.port||'/dev/ttyACM0';document.getElementById('cfg-stm32-baudrate').value=st.baudrate||115200;var dc=cfg.decision||{};document.getElementById('cfg-decision-auto_open_on_rtl').checked=dc.auto_open_on_rtl!==false;document.getElementById('cfg-decision-low_battery_threshold').value=dc.low_battery_threshold||20;document.getElementById('cfg-decision-lost_timeout').value=dc.lost_timeout||30;var up=cfg.upgrade||{};document.getElementById('cfg-upgrade-block_size').value=up.block_size||1024;document.getElementById('cfg-upgrade-block_timeout').value=up.block_timeout||3}).catch(function(e){showToast('Load config failed: '+e.message,'error')})}
+function cfgChanged(){document.getElementById('cfg-save-status').innerHTML='<span class="badge yellow">UNSAVED</span>'}
+function saveConfig(){var cfg={mqtt:{enabled:document.getElementById('cfg-mqtt-enabled').checked,broker:document.getElementById('cfg-mqtt-broker').value,port:parseInt(document.getElementById('cfg-mqtt-port').value)||1883,username:document.getElementById('cfg-mqtt-username').value,password:document.getElementById('cfg-mqtt-password').value,topic_prefix:document.getElementById('cfg-mqtt-topic_prefix').value},mavlink:{host:document.getElementById('cfg-mavlink-host').value,port:parseInt(document.getElementById('cfg-mavlink-port').value)||5760},camera:{rtsp_url:document.getElementById('cfg-camera-rtsp_url').value},stm32:{port:document.getElementById('cfg-stm32-port').value,baudrate:parseInt(document.getElementById('cfg-stm32-baudrate').value)||115200},decision:{auto_open_on_rtl:document.getElementById('cfg-decision-auto_open_on_rtl').checked,low_battery_threshold:parseInt(document.getElementById('cfg-decision-low_battery_threshold').value)||20,lost_timeout:parseInt(document.getElementById('cfg-decision-lost_timeout').value)||30},upgrade:{block_size:parseInt(document.getElementById('cfg-upgrade-block_size').value)||1024,block_timeout:parseFloat(document.getElementById('cfg-upgrade-block_timeout').value)||3.0}};fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).then(function(r){return r.json()}).then(function(res){if(res.ok){document.getElementById('cfg-save-status').innerHTML='<span class="badge green">SAVED</span>';showToast('Config saved. Run: hangar reload','info')}else{document.getElementById('cfg-save-status').innerHTML='<span class="badge red">FAILED: '+res.error+'</span>';showToast('Save failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
+
+function sendCmd(cmd){fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})}).then(function(r){return r.json()}).then(function(res){var el=document.getElementById('cmd-result');if(res.ok){el.innerHTML='<span class="badge green">OK: '+cmd+'</span>';showToast('Command sent: '+cmd,'info')}else{el.innerHTML='<span class="badge red">FAIL: '+res.error+'</span>';showToast('Failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
+function restartService(){if(!confirm('Restart service?'))return;fetch('/api/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json()}).then(function(res){showToast(res.msg||'Restart requested','info')})}
+
+function loadLogs(){fetch('/api/logs').then(function(r){return r.json()}).then(function(d){document.getElementById('logs-content').textContent=d.lines||'(empty)'}).catch(function(){})}
+loadLogs();
+
+function loadSystem(){fetch('/api/system').then(function(r){return r.json()}).then(function(s){document.getElementById('sys-cpu-fill').style.width=Math.min(s.cpu_percent||0,100)+'%';document.getElementById('sys-cpu-val').textContent=(s.cpu_percent||0).toFixed(1)+'%';document.getElementById('sys-cpu-load').textContent='Load: '+(s.load_avg||[]).join(' / ');var rp=s.ram_percent||0;document.getElementById('sys-ram-fill').style.width=rp+'%';document.getElementById('sys-ram-val').textContent=rp.toFixed(1)+'%';document.getElementById('sys-ram-detail').textContent=(s.ram_used||'--')+' / '+(s.ram_total||'--');var dp=s.disk_percent||0;document.getElementById('sys-disk-fill').style.width=dp+'%';document.getElementById('sys-disk-val').textContent=dp.toFixed(1)+'%';document.getElementById('sys-disk-detail').textContent=(s.disk_used||'--')+' / '+(s.disk_total||'--');var u=s.uptime||0;document.getElementById('sys-uptime').textContent=Math.floor(u/60)+'m '+Math.floor(u%60)+'s';document.getElementById('sys-pid').textContent='PID: '+(s.pid||'--');document.getElementById('sys-time').textContent=new Date().toLocaleTimeString()}).catch(function(){})}
+setInterval(function(){if(document.getElementById('tab-system').classList.contains('active'))loadSystem()},5000);
+
+function loadSnapshots(){fetch('/api/camera/snapshots').then(function(r){return r.json()}).then(function(d){var snaps=d.snapshots||[];var ht='';if(snaps.length===0){ht='<div style="color:var(--dim);padding:20px;text-align:center;grid-column:1/-1">No snapshots. Click Capture.</div>'}else{for(var i=0;i<snaps.length;i++){ht+='<div class="snap-card"><img src="/api/camera/snapshot/'+snaps[i].name+'" onerror="this.style.display=\\'none\\'"><div class="sinfo">'+snaps[i].time+' ('+snaps[i].size+')</div></div>'}}document.getElementById('snap-grid').innerHTML=ht}).catch(function(e){document.getElementById('snap-grid').innerHTML='<div style="color:var(--red)">'+e.message+'</div>'})}
+function captureSnapshot(){showToast('Capturing...','info');fetch('/api/camera/snapshot',{method:'POST'}).then(function(r){return r.json()}).then(function(res){if(res.ok){showToast('Snapshot saved: '+res.file,'info');loadSnapshots()}else{showToast('Failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
+
+function loadUpgradeStatus(){fetch('/api/upgrade/status').then(function(r){return r.json()}).then(function(s){var st=s.state||'idle';document.getElementById('upg-state').textContent=st.toUpperCase();document.getElementById('upg-progress').style.width=(s.progress||0)+'%';document.getElementById('upg-info').textContent=(s.info||'')+'  '+(s.error||'')}).catch(function(){})}
+setInterval(function(){if(document.getElementById('tab-upgrade').classList.contains('active'))loadUpgradeStatus()},2000);
+function startUpgrade(){var p=document.getElementById('upg-path').value;if(!p){showToast('Enter firmware path','warn');return}fetch('/api/upgrade/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(res){if(res.ok){showToast('Upgrade started','info');loadUpgradeStatus()}else{showToast('Failed: '+res.error,'error');document.getElementById('upg-result').innerHTML='<span class="badge red">'+res.error+'</span>'}}).catch(function(e){showToast('Error: '+e.message,'error')})}
+function cancelUpgrade(){fetch('/api/upgrade/cancel',{method:'POST'}).then(function(r){return r.json()}).then(function(res){showToast(res.ok?'Cancelled':'Cancel failed','info');loadUpgradeStatus()}).catch(function(){})}
+
+function loadDecisionRules(){fetch('/api/decision').then(function(r){return r.json()}).then(function(d){var rules=d.rules||[];var ht='';var icons={DRONE_RTL:'SAT',DRONE_BATTERY_LOW:'BAT',DRONE_DISCONNECTED:'WIFI',HANGAR_ALARM:'ALM',MQTT_COMMAND:'NET'};for(var i=0;i<rules.length;i++){var r=rules[i];ht+='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">'+(icons[r.event]||'GEAR')+'</span><div><strong>'+r.name+'</strong><br><span style="font-size:10px;color:var(--dim)">Trigger: '+r.event+' | Action: '+r.action+'</span></div><span class="badge '+(r.enabled?'green':'red')+'" style="margin-left:auto">'+(r.enabled?'ENABLED':'DISABLED')+'</span></div><div style="margin-top:8px;font-size:11px;color:var(--dim)">'+r.description+'</div></div>'}document.getElementById('decision-rules').innerHTML=ht}).catch(function(){})}
+</script>
+</body>
+</html>
