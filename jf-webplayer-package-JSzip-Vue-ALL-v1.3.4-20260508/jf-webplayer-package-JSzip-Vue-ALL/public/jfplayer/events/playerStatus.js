@@ -1,0 +1,1 @@
+export const emState_Idle=0;export const emState_Pausing=2;export const emState_Running=3;export const emState_Finished=4;export const emState_Resume=5;

@@ -1,0 +1,1 @@
+export function TimeMillisUtil(){}TimeMillisUtil.getCounter=function(){let i=1;return++i,i<10?"00000"+i:i<100?"0000"+i:i<1e3?"000"+i:i<1e4?"00"+i:i<1e5?"0"+i:i<1e6?i:(i=1,"00000"+i)},TimeMillisUtil.getTimMillis=function(){return TimeMillisUtil.getCounter()+(new Date).getTime().toString()};

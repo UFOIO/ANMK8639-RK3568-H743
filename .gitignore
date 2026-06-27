@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+# Data & logs
+data/
+*.log
+# Test artifacts
+test_dashboard.html
+test_js.js
+# IDE
+.vscode/
+.idea/
+*.swp
+# OS
+.DS_Store
+Thumbs.db
+# Virtual env (on RK3568)
+hangar_venv/
+# Output binaries
+output/
+*.bin
+*.hex
+*.axf
+*.elf

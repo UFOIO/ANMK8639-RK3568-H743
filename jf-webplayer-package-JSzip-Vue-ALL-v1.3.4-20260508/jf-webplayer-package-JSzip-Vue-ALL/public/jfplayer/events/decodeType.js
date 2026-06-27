@@ -1,0 +1,1 @@
+export const STREAM_TYPE_NONE=-1;export const STREAM_TYPE_HLS=0;export const STREAM_TYPE_FLV=1;export const STREAM_TYPE_NALU=2;export const FMP4_ENCODE_UNKNOWN=-1;export const FMP4_ENCODE_VIDEO_JPG=0;export const FMP4_ENCODE_VIDEO_MPEG4=1;export const FMP4_ENCODE_VIDEO_H264=2;export const FMP4_ENCODE_VIDEO_H265=3;

@@ -1,0 +1,1 @@
+import{AuthManager as t}from"./AuthManager.js";import r from"./AuthConstants.js";export function createAuthManager(n={}){const o={...n,authUrl:n.authUrl||r.DEFAULT_AUTH_URL,maxRetryCount:n.maxRetryCount||r.MAX_RETRY_COUNT,logger:n.logger||null};return new t(o)}

@@ -1,0 +1,192 @@
+"""
+ANMK8639 机库智能控制系统 — 主入口 (Linux Daemon 标准)。
+支持: SIGHUP热重载 / SIGTERM优雅退出 / PID文件 / 命令行参数
+"""
+import argparse
+import logging
+import os
+import signal
+import sys
+import time
+
+from utils.config import ConfigLoader
+from utils.logger import setup_logger
+from core.event_bus import EventBus
+from core.app_state import AppState
+from core.watchdog import Watchdog
+from modules.mqtt_client import MQTTClient
+from modules.mavlink_client import MAVLinkClient
+from modules.stm32_comm import STM32Comm
+from modules.camera import CameraCapture
+from modules.decision import DecisionEngine
+from modules.upgrade_mgr import UpgradeManager
+from modules.web_ui import WebUI
+
+logger = logging.getLogger(__name__)
+
+HEARTBEAT_CHARS = ["◷", "◶", "◵", "◴"]
+
+# 全局引用（信号处理器需要访问）
+_modules = []
+_app_state = None
+_running = False
+
+
+def main():
+    global _modules, _app_state, _running
+
+    parser = argparse.ArgumentParser(description="ANMK8639 Hangar Control System")
+    parser.add_argument("-c", "--config", default="config.yaml", help="配置文件路径")
+    parser.add_argument("-p", "--pidfile", default="/run/hangar.pid", help="PID 文件路径")
+    parser.add_argument("--nodaemon", action="store_true", help="前台运行（不写PID，日志到stdout）")
+    args = parser.parse_args()
+
+    config = ConfigLoader(args.config)
+    setup_logger(config.log)
+
+    # PID 文件 (systemd 管理时不写)
+    if not args.nodaemon:
+        try:
+            os.makedirs(os.path.dirname(args.pidfile), exist_ok=True)
+            with open(args.pidfile, "w") as f:
+                f.write(str(os.getpid()))
+        except PermissionError:
+            logger.warning("Cannot write PID file: %s", args.pidfile)
+
+    logger.info("=" * 50)
+    logger.info("ANMK8639 Hangar Control System v1.0")
+    logger.info("PID: %d | Config: %s", os.getpid(), args.config)
+    logger.info("=" * 50)
+
+    event_bus = EventBus()
+    _app_state = AppState()
+
+    # 创建模块
+    mqtt = MQTTClient(config.mqtt, event_bus, _app_state)
+    mavlink = MAVLinkClient(config.mavlink, event_bus, _app_state)
+    stm32 = STM32Comm(config.stm32, event_bus, _app_state)
+    camera = CameraCapture(config.camera, app_state=_app_state)
+    decision = DecisionEngine(config.decision, event_bus, _app_state)
+    upgrade = UpgradeManager({}, stm32, event_bus)
+    web_ui = WebUI(config.get("web_ui", {}), _app_state, event_bus, stm32)
+    watchdog = Watchdog(config.watchdog, event_bus)
+
+    event_bus.subscribe("DECISION_ACTION", lambda d: _execute_action(d, mqtt, stm32))
+
+    _app_state.log_event("system", "info", "机库控制系统启动")
+    _app_state.log_event("system", "info", "配置: " + args.config)
+
+    # 保存方便热重载
+    _modules = [mqtt, mavlink, stm32, camera, decision, web_ui]
+
+    for mod in _modules:
+        try:
+            mod.start()
+        except Exception:
+            logger.exception("Failed to start %s", mod.__class__.__name__)
+
+    watchdog.start()
+    logger.info("All modules started. Entering main loop.")
+    _app_state.log_event("system", "info", "所有模块就绪，进入主循环")
+
+    # ===== 信号处理 =====
+    _running = True
+
+    def on_terminate(sig, frame):
+        global _running
+        logger.info("收到信号 %s, 正在优雅退出...", sig.name if hasattr(sig, 'name') else sig)
+        _app_state.log_event("system", "info", "收到退出信号")
+        _running = False
+
+    def on_reload(sig, frame):
+        """SIGHUP: 热重载配置"""
+        logger.info("收到 SIGHUP, 热重载配置...")
+        _app_state.log_event("system", "info", "热重载配置")
+        try:
+            new_cfg = ConfigLoader(args.config)
+            # 重新设置日志级别
+            logging.getLogger().setLevel(getattr(logging, new_cfg.log.get("level", "INFO").upper()))
+            # 更新各模块配置（只更新可变参数）
+            # MAVLink 心跳超时
+            if hasattr(mavlink, '_hb_timeout'):
+                mavlink._hb_timeout = new_cfg.mavlink.get("heartbeat_timeout", 5)
+            logger.info("配置已热重载 (日志级别、心跳超时等)")
+            _app_state.log_event("system", "info", "配置热重载完成")
+        except Exception:
+            logger.exception("热重载失败")
+
+    signal.signal(signal.SIGTERM, on_terminate)
+    signal.signal(signal.SIGINT, on_terminate)
+    signal.signal(signal.SIGHUP, on_reload)
+
+    # ===== 主循环 =====
+    tick = 0
+    last_status = 0.0
+    try:
+        while _running:
+            event_bus.poll(timeout=0.1)
+            tick += 1
+
+            # 每 5 秒终端心跳
+            now = time.time()
+            if now - last_status >= 5.0:
+                last_status = now
+                spin = HEARTBEAT_CHARS[(tick // 5) % len(HEARTBEAT_CHARS)]
+                health = _app_state.health()
+                overall = health["overall"]
+                icon = {"healthy": "●", "degraded": "◐", "critical": "○"}.get(overall, "?")
+                drone_ok = "🛸" if health["mavlink"]["connected"] else "  "
+                stm32_ok = "🔌" if health["stm32"]["connected"] else "  "
+                uptime_str = _fmt_uptime(_app_state.uptime)
+                logger.info(
+                    "%s [%s] %s%s | 运行 %s | Web :8080",
+                    spin, icon, drone_ok, stm32_ok, uptime_str
+                )
+    except KeyboardInterrupt:
+        pass
+
+    # ===== 清理 =====
+    logger.info("Shutting down...")
+    _app_state.log_event("system", "info", "机库控制系统关闭")
+    for mod in reversed(_modules):
+        try:
+            mod.stop()
+        except Exception:
+            logger.exception("Stop error")
+    watchdog.stop()
+
+    # 删除 PID 文件
+    if not args.nodaemon:
+        try:
+            os.unlink(args.pidfile)
+        except Exception:
+            pass
+
+    logger.info("System stopped. Goodbye.")
+
+
+def _fmt_uptime(sec):
+    d = int(sec // 86400)
+    h = int((sec % 86400) // 3600)
+    m = int((sec % 3600) // 60)
+    if d > 0:
+        return f"{d}d{h}h"
+    if h > 0:
+        return f"{h}h{m}m"
+    return f"{m}m"
+
+
+def _execute_action(data, mqtt, stm32):
+    target = data.get("target", "")
+    if target == "mqtt" and data.get("type") == "alarm":
+        mqtt.publish_alarm(data.get("level", "INFO"), data.get("code", "UNKNOWN"), data.get("msg", ""))
+    elif target == "stm32":
+        from protocol.stm32_proto import CMD_OPEN_DOOR, CMD_CLOSE_DOOR, CMD_LOCK, CMD_UNLOCK
+        cmd_map = {"OPEN_DOOR": CMD_OPEN_DOOR, "CLOSE_DOOR": CMD_CLOSE_DOOR, "LOCK": CMD_LOCK, "UNLOCK": CMD_UNLOCK}
+        code = cmd_map.get(data.get("cmd", ""))
+        if code is not None:
+            stm32.send_command(code)
+
+
+if __name__ == "__main__":
+    main()

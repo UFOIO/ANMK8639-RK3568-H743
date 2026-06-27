@@ -1,0 +1,1 @@
+export const kProtoType_NONE=-99;export const kProtoType_RTSP=0;export const kProtoType_WS=1;export const kProtoType_HTTP=2;export const kProtoType_HTTP_M3U8=3;export const kProtoType_WEBRTC=4;export const kProtoType_MP4=5;export const kProtoType_PRI=6;

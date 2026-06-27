@@ -1,0 +1,1 @@
+let e=null;!async function(){try{const o=await import("./decoder.js");e=o}catch(e){console.error("[Decoder.js Worker] Failed to initialize decoder:",e)}}();

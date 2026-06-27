@@ -1,0 +1,41 @@
+[Unit]
+Description=ANMK8639 Hangar Control System
+Documentation=https://github.com/anmk8639/hangar
+After=network-online.target time-sync.target
+Wants=network-online.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/hangar
+
+# 启动 (配置文件从 /etc/hangar/ 读取)
+ExecStart=/usr/bin/python3 /opt/hangar/main.py -c /etc/hangar/config.yaml -p /run/hangar.pid
+
+# 优雅退出 (SIGTERM)
+ExecStop=/bin/kill -s TERM $MAINPID
+
+# 热重载 (SIGHUP -> 重新读取 config.yaml)
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# 崩溃自动重启
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# PID 文件
+PIDFile=/run/hangar.pid
+
+# 资源限制
+LimitNOFILE=4096
+MemoryAccounting=true
+
+# 日志输出到 journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hangar
+
+[Install]
+WantedBy=multi-user.target

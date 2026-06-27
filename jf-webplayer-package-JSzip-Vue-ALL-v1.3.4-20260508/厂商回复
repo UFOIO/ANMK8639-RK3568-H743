@@ -1,0 +1,15 @@
+rtsp://10.6.3.57:554/user=admin&password=&channel=1&stream=0.sdp?
+
+10.6.3.57这个是被连接的设备的IP
+
+:554这个是RTSP服务的端口号，可以在设备的网络服务里面更改
+
+user=admin这个是设备的登录用户名
+
+password= 密码空
+
+channel=1 第一通道
+
+stream=0.sdp？主码流
+
+stream=1.sdp？副码流

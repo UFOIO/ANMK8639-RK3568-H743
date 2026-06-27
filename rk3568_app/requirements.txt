@@ -1,0 +1,6 @@
+pyserial>=3.5
+paho-mqtt>=1.6
+pymavlink>=2.4
+pyyaml>=6.0
+# opencv-python>=4.8   # 摄像头截图(按需启用)
+# numpy>=1.24          # 数值计算(按需启用)

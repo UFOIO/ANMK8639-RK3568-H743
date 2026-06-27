@@ -1,0 +1,1 @@
+let o=null;!async function(){try{const n=await import("./downloader.js");o=n}catch(o){console.error("[Downloader.js Worker] Failed to initialize downloader:",o)}}();
