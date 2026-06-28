@@ -104,6 +104,87 @@ def _load_yaml_config(path):
         return yaml.safe_load(f) or {}
 
 
+
+def _validate_config(cfg):
+    """校验配置合法性。返回 (ok, error_list)。"""
+    errors = []
+    VALID_BAUDRATES = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600}
+    VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR"}
+    VALID_PARITY = {"N", "E", "O"}
+    VALID_QOS = {0, 1, 2}
+
+    def _chk_port(v, name):
+        if not isinstance(v, int) or v < 1 or v > 65535:
+            errors.append(name + "端口必须在1-65535之间, 当前值: " + str(v))
+
+    def _chk_ip(v, name):
+        if not v or not isinstance(v, str):
+            errors.append(name + "IP地址不能为空")
+
+    def _chk_positive(v, name):
+        if not isinstance(v, (int, float)) or v <= 0:
+            errors.append(name + "必须为正数, 当前值: " + str(v))
+
+    # MQTT
+    mq = cfg.get("mqtt", {})
+    _chk_ip(mq.get("broker", ""), "MQTT Broker")
+    _chk_port(mq.get("port", 0), "MQTT")
+    if mq.get("keepalive", 0) < 1:
+        errors.append("MQTT keepalive 至少1秒")
+    if mq.get("qos", 0) not in VALID_QOS:
+        errors.append("MQTT QoS 必须是0/1/2")
+
+    # MAVLink
+    ml = cfg.get("mavlink", {})
+    _chk_ip(ml.get("host", ""), "MAVLink")
+    _chk_port(ml.get("port", 0), "MAVLink")
+    _chk_positive(ml.get("heartbeat_timeout", 0), "MAVLink heartbeat_timeout")
+
+    # STM32
+    st = cfg.get("stm32", {})
+    if not st.get("port", ""):
+        errors.append("STM32 串口不能为空")
+    if st.get("baudrate", 0) not in VALID_BAUDRATES:
+        errors.append("STM32 波特率无效, 可选: " + str(sorted(VALID_BAUDRATES)))
+    if st.get("parity", "N") not in VALID_PARITY:
+        errors.append("STM32 校验位必须是N/E/O")
+    if st.get("data_bits", 0) not in {7, 8}:
+        errors.append("STM32 数据位必须是7或8")
+    if st.get("stop_bits", 0) not in {1, 2}:
+        errors.append("STM32 停止位必须是1或2")
+    _chk_positive(st.get("cmd_timeout", 0), "STM32 cmd_timeout")
+    if st.get("cmd_retry", 0) < 1:
+        errors.append("STM32 cmd_retry 至少为1")
+
+    # Camera
+    cam = cfg.get("camera", {})
+    if cam.get("enabled", True):
+        if cam.get("rtsp_url", ""):
+            if not cam["rtsp_url"].startswith("rtsp://"):
+                errors.append("Camera RTSP URL 必须以 rtsp:// 开头")
+        else:
+            _chk_ip(cam.get("ip", ""), "Camera")
+            _chk_port(cam.get("port", 0), "Camera")
+    if cam.get("snapshot_timeout", 0) < 1:
+        errors.append("Camera snapshot_timeout 至少1秒")
+
+    # Decision
+    dc = cfg.get("decision", {})
+    if not (0 <= dc.get("low_battery_threshold", 0) <= 100):
+        errors.append("Decision low_battery_threshold 必须在0-100之间")
+    _chk_positive(dc.get("lost_timeout", 0), "Decision lost_timeout")
+
+    # Log
+    lg = cfg.get("log", {})
+    if lg.get("level", "INFO") not in VALID_LOG_LEVELS:
+        errors.append("Log level 必须是 DEBUG/INFO/WARNING/ERROR")
+
+    # Web UI
+    wu = cfg.get("web_ui", {})
+    _chk_port(wu.get("port", 0), "Web UI")
+
+    return (len(errors) == 0, errors)
+
 def _save_yaml_config(path, cfg):
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
@@ -320,6 +401,10 @@ class WebUI:
                         self._json({"ok": False, "error": "unknown cmd or STM32 offline"})
 
                 elif path == "/api/config":
+                    ok, errs = _validate_config(body)
+                    if not ok:
+                        self._json({"ok": False, "error": "配置校验失败", "details": errs})
+                        return
                     try:
                         _save_yaml_config(ui._config_path, body)
                         ui._app_state.log_event("webui", "info", "用户更新了配置文件(结构化)")

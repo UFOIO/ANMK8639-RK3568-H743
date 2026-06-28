@@ -14,7 +14,6 @@ from utils.logger import setup_logger
 from core.event_bus import EventBus
 from core.app_state import AppState
 from core.watchdog import Watchdog
-from core.terminal_ui import TerminalDashboard
 from modules.mqtt_client import MQTTClient
 from modules.mavlink_client import MAVLinkClient
 from modules.stm32_comm import STM32Comm
@@ -119,9 +118,6 @@ def main():
     signal.signal(signal.SIGINT, on_terminate)
     signal.signal(signal.SIGHUP, on_reload)
 
-    # ===== 终端面板 =====
-    _tui = TerminalDashboard(_app_state, config)
-
     # ===== 主循环 =====
     tick = 0
     last_status = 0.0
@@ -130,27 +126,15 @@ def main():
             event_bus.poll(timeout=0.1)
             tick += 1
 
-            # 每 2 秒刷新终端面板
+            # 每 5 秒打印状态快照
             now = time.time()
-            if now - last_status >= 2.0:
+            if now - last_status >= 5.0:
                 last_status = now
-                if _tui.enabled:
-                    _tui.refresh()
-                else:
-                    # 后台模式: 单行心跳日志
-                    health = _app_state.health()
-                    overall = health["overall"]
-                    icon = {"healthy": "●", "degraded": "◐", "critical": "○"}.get(overall, "?")
-                    uptime_str = _fmt_uptime(_app_state.uptime)
-                    logger.info(
-                        "%s [%s] | 运行 %s | Web :%d",
-                        icon, overall.upper(), uptime_str, config.get("web_ui", {}).get("port", 8080)
-                    )
+                _print_status(_app_state, config)
     except KeyboardInterrupt:
         pass
 
     # ===== 清理 =====
-    _tui.stop()
     logger.info("Shutting down...")
     _app_state.log_event("system", "info", "机库控制系统关闭")
     for mod in reversed(_modules):
@@ -169,6 +153,60 @@ def main():
 
     logger.info("System stopped. Goodbye.")
 
+
+def _print_status(app_state, config):
+    """打印简洁原始状态数据到终端 — 每个模块一行。"""
+    health = app_state.health()
+    status = app_state.to_dict()
+    uptime = _fmt_uptime(app_state.uptime)
+
+    mav = health["mavlink"]
+    mqtt = health["mqtt"]
+    stm = health["stm32"]
+    cam = health["camera"]
+
+    mav_ago = str(int(time.time()-mav["last_hb_sec"]))+"s" if mav["last_hb_sec"] else "--"
+    mqtt_ago = str(int(time.time()-mqtt["last_msg_sec"]))+"s" if mqtt["last_msg_sec"] else "--"
+    stm_ago = str(int(time.time()-stm["last_status_sec"]))+"s" if stm["last_status_sec"] else "--"
+    cam_ago = str(int(time.time()-cam.get("last_snapshot_sec",0)))+"s" if cam.get("last_snapshot_sec") else "--"
+
+    mav_ok = "OK" if mav["connected"] else "DOWN"
+    mqtt_ok = "OK" if mqtt["connected"] else "DOWN"
+    stm_ok = "OK" if stm["connected"] else "DOWN"
+    cam_ok = "OK" if cam.get("last_snapshot_sec") else "DOWN"
+
+    print("")
+    print("=== STATUS " + time.strftime("%H:%M:%S") + " | UPTIME " + uptime + " | Web :" + str(config.get("web_ui",{}).get("port",8080)) + " ===")
+    print("  MAVLink [" + mav_ok + "]  HB:" + mav_ago + "  |  MQTT [" + mqtt_ok + "]  MSG:" + mqtt_ago)
+    print("  STM32  [" + stm_ok + "]  RPT:" + stm_ago + "  |  Camera [" + cam_ok + "]  SNAP:" + cam_ago)
+
+    drone = status.get("drone", {})
+    if drone.get("mode"):
+        print("  DRONE  mode=" + str(drone.get("mode","?")) + "  batt=" + str(drone.get("battery","?")) + "%  alt=" + str(drone.get("alt","?")) + "m  spd=" + str(drone.get("groundspeed","?")) + "m/s  sat=" + str(drone.get("satellites","?")) + "  lat=" + str(drone.get("lat","?")) + "  lon=" + str(drone.get("lon","?")) + "  armed=" + ("YES" if drone.get("armed") else "NO"))
+
+    hangar = status.get("hangar", {})
+    if hangar.get("door"):
+        alarms = hangar.get("alarms", [])
+        alm_str = " ALARMS:" + ",".join(alarms) if alarms else ""
+        print("  HANGAR door=" + str(hangar.get("door","?")) + "  lock=" + str(hangar.get("lock","?")) + "  temp=" + str(hangar.get("temperature","?")) + "C  hum=" + str(hangar.get("humidity","?")) + "%" + alm_str)
+
+    try:
+        with open("/proc/loadavg") as f:
+            load = f.read().split()[0]
+        with open("/proc/meminfo") as f:
+            mem = {}
+            for line in f:
+                p = line.split(":")
+                if len(p) == 2:
+                    mem[p[0].strip()] = int(p[1].strip().split()[0])
+        ram_used = (mem.get("MemTotal",1)-mem.get("MemAvailable",1))//1024
+        ram_total = mem.get("MemTotal",1)//1024
+        print("  SYSTEM load=" + load + "  ram=" + str(ram_used) + "M/" + str(ram_total) + "M")
+    except:
+        pass
+
+    print("=" * 60)
+    sys.stdout.flush()
 
 def _fmt_uptime(sec):
     d = int(sec // 86400)
