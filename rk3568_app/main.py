@@ -137,9 +137,9 @@ def main():
             event_bus.poll(timeout=0.1)
             tick += 1
 
-            # 每 5 秒心跳 — 始终保持有输出
+            # 每秒心跳 — 始终保持有输出
             now = time.time()
-            if now - last_status >= 5.0:
+            if now - last_status >= 1.0:
                 last_status = now
                 _print_heartbeat(_app_state, config)
     except KeyboardInterrupt:
@@ -174,7 +174,7 @@ def main():
     logger.info("System stopped. Goodbye.")
 
 
-def _print_sys_status(app_state, config):
+def _print_heartbeat(app_state, config):
     """每30秒打印系统资源 + 各模块数据新鲜度摘要"""
     health = app_state.health()
     uptime = _fmt_uptime(app_state.uptime)
