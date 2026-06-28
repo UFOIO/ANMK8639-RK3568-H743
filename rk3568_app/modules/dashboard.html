@@ -277,7 +277,7 @@ function switchTab(id, btn) {
 }
 
 // ====== 健康轮询 (每秒) ======
-function startSSE(){var es=new EventSource("/api/stream");es.onmessage=function(e){try{var d=JSON.parse(e.data);APP=d;updateConnectionCards(d);updateOverview(d);updateSystemBars(d);updateRecentEvents(d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}catch(ex){}};es.onerror=function(){es.close();setTimeout(startSSE,3000)};}
+function pollHealth(){fetch("/api/health").then(function(r){return r.json()}).then(function(d){APP=d;updateConnectionCards(d);updateOverview(d);updateSystemBars(d);updateRecentEvents(d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}).catch(function(e){})};setTimeout(pollHealth,1000)
 
 // ====== 连接状态卡片 ======
 var _MOD_NAMES = {mavlink:"MAVLink 无人机", mqtt:"MQTT 地面站", stm32:"STM32 下位机", camera:"摄像头"};
@@ -558,7 +558,7 @@ function loadDecisionRules() {
 }
 
 // ====== 启动 ======
-startSSE();
+pollHealth();setInterval(pollHealth,2000);
 setInterval(loadEvents, 5000);
 setInterval(loadLogs, 10000);
 loadConfig();
