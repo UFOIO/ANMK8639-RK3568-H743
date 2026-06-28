@@ -9,13 +9,23 @@ from collections import deque
 
 
 
+_prev_cpu_fields = None
+
 def _get_system_info():
-    """??????: CPU/RAM/Disk"""
+    """??????: CPU(??/proc/stat)/RAM/Disk"""
+    global _prev_cpu_fields
     info = {"cpu": 0, "ram_pct": 0, "ram_used": "0M", "ram_total": "0M",
             "disk_pct": 0, "disk_used": "0G", "disk_total": "0G"}
     try:
-        with open("/proc/loadavg") as f:
-            info["cpu"] = round(float(f.read().split()[0]) * 100, 1)
+        with open("/proc/stat") as f:
+            fields = [int(x) for x in f.readline().split()[1:8]]
+        if _prev_cpu_fields:
+            pt, pi = sum(_prev_cpu_fields), _prev_cpu_fields[3] + _prev_cpu_fields[4]
+            ct, ci = sum(fields), fields[3] + fields[4]
+            td, id_ = ct - pt, ci - pi
+            if td > 0:
+                info["cpu"] = round((td - id_) / td * 100, 1)
+        _prev_cpu_fields = fields
     except Exception:
         pass
     try:

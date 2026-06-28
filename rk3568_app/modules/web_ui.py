@@ -13,12 +13,23 @@ import yaml
 import subprocess
 import signal
 from http.server import HTTPServer, BaseHTTPRequestHandler
+_prev_cpu_web = None
+
 def _get_system_info():
-    """读取系统资源"""
+    """读取系统资源: CPU(读/proc/stat)/RAM/Disk"""
+    global _prev_cpu_web
     info = {"cpu": 0, "ram_pct": 0, "ram_used": "0M", "ram_total": "0M",
             "disk_pct": 0, "disk_used": "0G", "disk_total": "0G"}
     try:
-        with open("/proc/loadavg") as f: info["cpu"] = round(float(f.read().split()[0]) * 100, 1)
+        with open("/proc/stat") as f:
+            fields = [int(x) for x in f.readline().split()[1:8]]
+        if _prev_cpu_web:
+            pt, pi = sum(_prev_cpu_web), _prev_cpu_web[3] + _prev_cpu_web[4]
+            ct, ci = sum(fields), fields[3] + fields[4]
+            td, id_ = ct - pt, ci - pi
+            if td > 0:
+                info["cpu"] = round((td - id_) / td * 100, 1)
+        _prev_cpu_web = fields
     except: pass
     try:
         with open("/proc/meminfo") as f:
@@ -141,8 +152,17 @@ def _validate_config(cfg):
     return (len(errors) == 0, errors)
 
 def _save_yaml_config(path, cfg):
-    with open(path, "w", encoding="utf-8") as f:
-        yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
+    """原子写入：先写临时文件再 rename，避免断电损坏配置"""
+    import tempfile, os
+    dirname = os.path.dirname(path) or "."
+    fd, tmp = tempfile.mkstemp(dir=dirname, suffix=".yaml")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
+        os.replace(tmp, path)  # atomic rename
+    except Exception:
+        os.unlink(tmp)
+        raise
 
 
 LOGIN_HTML = """<!DOCTYPE html>
@@ -179,7 +199,8 @@ class WebUI:
         self._stm32 = stm32_comm
         self._upgrade_mgr = upgrade_mgr
         self._server = None
-        self._config_path = "config.yaml"
+        # Use absolute path matching main.py -c /etc/hangar/config.yaml
+        self._config_path = "/etc/hangar/config.yaml"
         self._api_key = config.get("api_key", "")
 
     def start(self):
