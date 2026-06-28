@@ -102,7 +102,7 @@ class MQTTClient:
             self._app_state.set("system.mqtt_connected", True)
             self._reconnect_delay = 1  # 重置退避
             logger.info("MQTT connected")
-            print("MQTT CONNECTED: " + self._broker + ":" + str(self._port))
+            print("MQTT CONNECTED: " + self._broker + ":" + str(self._port, flush=True))
             # 订阅下行topic
             client.subscribe("hangar/command", qos=1)
             client.subscribe("hangar/config/set", qos=1)
@@ -114,10 +114,10 @@ class MQTTClient:
         self._app_state.set("system.mqtt_connected", False)
         if rc != 0:
             logger.warning("MQTT unexpected disconnect (rc=%d), will retry...", rc)
-            print("MQTT DISCONNECTED (retrying)")
+            print("MQTT DISCONNECTED (retrying, flush=True)", flush=True)
         else:
             logger.info("MQTT disconnected cleanly")
-            print("MQTT DISCONNECTED")
+            print("MQTT DISCONNECTED", flush=True)
 
     def _on_message(self, client, userdata, msg):
         try:
@@ -127,7 +127,7 @@ class MQTTClient:
         parsed = parse_message(text)
         if parsed:
             logger.info("MQTT RX: %s -> %s", msg.topic, parsed.get("type"))
-            print("MQTT CMD: " + str(msg.topic) + " -> " + str(msg.payload)[:80])
+            print("MQTT CMD: " + str(msg.topic, flush=True) + " -> " + str(msg.payload)[:80])
             self._event_bus.publish("MQTT_COMMAND", {
                 "topic": msg.topic,
                 "data": parsed,

@@ -67,7 +67,7 @@ class STM32Comm:
         except serial.SerialException:
             if self._app_state.get("hangar.stm32_connected"):
                 self._app_state.log_event("stm32", "warn", "STM32串口断开")
-            print("STM32 DISCONNECTED")
+            print("STM32 DISCONNECTED", flush=True)
             self._app_state.set("hangar.stm32_connected", False)
             self._ser = None
 
@@ -115,7 +115,7 @@ class STM32Comm:
             self._app_state.set("hangar.humidity", hum)
             self._app_state.set("hangar.last_status_update", time.time())
             self._event_bus.publish("HANGAR_STATUS", {"door": door, "lock": lock})
-            print("STM32 RPT: door=" + self._door_str(door) + " lock=" + self._lock_str(lock) + " temp=" + str(temp) + "C hum=" + str(hum) + "% alarms=" + str(alarms))
+            print("STM32 RPT: door=" + self._door_str(door, flush=True) + " lock=" + self._lock_str(lock) + " temp=" + str(temp) + "C hum=" + str(hum) + "% alarms=" + str(alarms))
             if alarms:
                 self._event_bus.publish("HANGAR_ALARM", {"flags": alarms})
                 self._app_state.log_event("stm32", "error",

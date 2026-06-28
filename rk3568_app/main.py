@@ -97,7 +97,7 @@ def main():
 
     watchdog.start()
     logger.info("All modules started. Entering main loop.")
-    print("\n=== ANMK8639 Hangar Control STARTED ===\n")
+    print("\n=== ANMK8639 Hangar Control STARTED ===\n", flush=True)
     _app_state.log_event("system", "info", "所有模块就绪，进入主循环")
 
     # ===== 信号处理 =====
@@ -189,7 +189,7 @@ def _print_sys_status(app_state, config):
                 if len(p) == 2: mem[p[0].strip()] = int(p[1].strip().split()[0])
         ram_used = (mem.get("MemTotal",1)-mem.get("MemAvailable",1))//1024
         ram_total = mem.get("MemTotal",1)//1024
-        print("SYS: load=" + load + " ram=" + str(ram_used) + "M/" + str(ram_total) + "M uptime=" + uptime)
+        print("SYS: load=" + load + " ram=" + str(ram_used, flush=True) + "M/" + str(ram_total) + "M uptime=" + uptime)
     except: pass
     
     # 各模块数据新鲜度
@@ -198,7 +198,7 @@ def _print_sys_status(app_state, config):
         sec = d.get(key)
         return str(int(time.time()-sec))+"s" if sec is not None else "--"
     
-    print("DATA: MAVLink HB:" + _age("mavlink","last_hb_sec") + 
+    print("DATA: MAVLink HB:" + _age("mavlink","last_hb_sec", flush=True) + 
           " | MQTT MSG:" + _age("mqtt","last_msg_sec") + 
           " | STM32 RPT:" + _age("stm32","last_status_sec") + 
           " | Camera SNAP:" + _age("camera","last_snapshot_sec"))
