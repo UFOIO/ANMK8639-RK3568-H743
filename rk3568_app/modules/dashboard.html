@@ -139,34 +139,88 @@ pre.log-box{background:var(--bg);border:1px solid var(--border);border-radius:6p
 
 <div class="tab" id="tab-config">
 <div class="sec-header"><h3>System Config</h3><button class="btn green" onclick="saveConfig()">Save Config</button></div>
+
 <div class="cfg-section"><h4>MQTT Ground Station</h4>
 <div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-mqtt-enabled" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Broker</label><input type="text" class="t" id="cfg-mqtt-broker" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mqtt-port" onchange="cfgChanged()" value="1883"></div>
+<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mqtt-port" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Client ID</label><input type="text" class="t" id="cfg-mqtt-client_id" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Username</label><input type="text" class="t" id="cfg-mqtt-username" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Password</label><input type="text" class="t" id="cfg-mqtt-password" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Topic Prefix</label><input type="text" class="t" id="cfg-mqtt-topic_prefix" onchange="cfgChanged()" value="hangar/"></div>
+<div class="cfg-row"><label>Password</label><input type="password" class="t" id="cfg-mqtt-password" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Topic Prefix</label><input type="text" class="t" id="cfg-mqtt-topic_prefix" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Keepalive(s)</label><input type="number" class="n" id="cfg-mqtt-keepalive" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Status Int(s)</label><input type="number" class="n" id="cfg-mqtt-status_interval" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>QoS</label><select id="cfg-mqtt-qos" onchange="cfgChanged()"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select></div>
+<div class="cfg-row"><label>Reconn Min(s)</label><input type="number" class="n" id="cfg-mqtt-reconnect_min" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Reconn Max(s)</label><input type="number" class="n" id="cfg-mqtt-reconnect_max" onchange="cfgChanged()"></div>
 </div>
+
 <div class="cfg-section"><h4>MAVLink Drone</h4>
 <div class="cfg-row"><label>4G Module IP</label><input type="text" class="t" id="cfg-mavlink-host" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mavlink-port" onchange="cfgChanged()" value="5760"></div>
+<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mavlink-port" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>HB Timeout(s)</label><input type="number" class="n" id="cfg-mavlink-heartbeat_timeout" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>System ID</label><input type="number" class="n" id="cfg-mavlink-system_id" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Reconn Int(s)</label><input type="number" class="n" id="cfg-mavlink-reconnect_interval" onchange="cfgChanged()"></div>
 </div>
+
 <div class="cfg-section"><h4>Camera RTSP</h4>
-<div class="cfg-row"><label>RTSP URL</label><input type="text" class="t" id="cfg-camera-rtsp_url" onchange="cfgChanged()" style="min-width:400px"></div>
+<div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-camera-enabled" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>IP Address</label><input type="text" class="t" id="cfg-camera-ip" onchange="cfgChanged()" placeholder="10.6.3.57"></div>
+<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-camera-port" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Username</label><input type="text" class="t" id="cfg-camera-username" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Password</label><input type="password" class="t" id="cfg-camera-password" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Channel</label><input type="number" class="n" id="cfg-camera-channel" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Stream</label><select id="cfg-camera-stream" onchange="cfgChanged()"><option value="0">0 Main</option><option value="1">1 Sub</option></select></div>
+<div class="cfg-row"><label>RTSP URL</label><input type="text" class="t" id="cfg-camera-rtsp_url" onchange="cfgChanged()" style="min-width:400px" placeholder="Override: leave blank to use structured fields"></div>
+<div class="cfg-row"><label>Snap Int(s)</label><input type="number" class="n" id="cfg-camera-snapshot_interval" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Snap Dir</label><input type="text" class="t" id="cfg-camera-snapshot_dir" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Snap Timeout(s)</label><input type="number" class="n" id="cfg-camera-snapshot_timeout" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>FFmpeg Extra</label><input type="text" class="t" id="cfg-camera-ffmpeg_extra" onchange="cfgChanged()" placeholder="-vf fps=1"></div>
 </div>
+
 <div class="cfg-section"><h4>STM32 Serial</h4>
-<div class="cfg-row"><label>Device</label><input type="text" class="t" id="cfg-stm32-port" onchange="cfgChanged()" value="/dev/ttyACM0"></div>
-<div class="cfg-row"><label>Baudrate</label><input type="number" class="n" id="cfg-stm32-baudrate" onchange="cfgChanged()" value="115200"></div>
+<div class="cfg-row"><label>Device</label><input type="text" class="t" id="cfg-stm32-port" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Baudrate</label><input type="number" class="n" id="cfg-stm32-baudrate" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Data Bits</label><select id="cfg-stm32-data_bits" onchange="cfgChanged()"><option value="8">8</option><option value="7">7</option></select></div>
+<div class="cfg-row"><label>Parity</label><select id="cfg-stm32-parity" onchange="cfgChanged()"><option value="N">None</option><option value="E">Even</option><option value="O">Odd</option></select></div>
+<div class="cfg-row"><label>Stop Bits</label><select id="cfg-stm32-stop_bits" onchange="cfgChanged()"><option value="1">1</option><option value="2">2</option></select></div>
+<div class="cfg-row"><label>Cmd Timeout(s)</label><input type="number" class="n" id="cfg-stm32-cmd_timeout" onchange="cfgChanged()" step="0.1"></div>
+<div class="cfg-row"><label>Cmd Retry</label><input type="number" class="n" id="cfg-stm32-cmd_retry" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Status Int(s)</label><input type="number" class="n" id="cfg-stm32-status_interval" onchange="cfgChanged()"></div>
 </div>
+
 <div class="cfg-section"><h4>Decision Engine</h4>
-<div class="cfg-row"><label>Auto Open on RTL</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl" onchange="cfgChanged()" checked></div>
-<div class="cfg-row"><label>Low Battery (%)</label><input type="number" class="n" id="cfg-decision-low_battery_threshold" onchange="cfgChanged()" value="20"></div>
-<div class="cfg-row"><label>Lost Timeout (s)</label><input type="number" class="n" id="cfg-decision-lost_timeout" onchange="cfgChanged()" value="30"></div>
+<div class="cfg-row"><label>Auto Open on RTL</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Low Battery (%)</label><input type="number" class="n" id="cfg-decision-low_battery_threshold" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Lost Timeout(s)</label><input type="number" class="n" id="cfg-decision-lost_timeout" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>RTL Alt Thr(m)</label><input type="number" class="n" id="cfg-decision-rtl_alt_threshold" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Door Delay(s)</label><input type="number" class="n" id="cfg-decision-door_open_delay" onchange="cfgChanged()"></div>
 </div>
+
+<div class="cfg-section"><h4>Watchdog</h4>
+<div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-watchdog-enabled" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Device</label><input type="text" class="t" id="cfg-watchdog-device" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Feed Int(s)</label><input type="number" class="n" id="cfg-watchdog-feed_interval" onchange="cfgChanged()"></div>
+</div>
+
+<div class="cfg-section"><h4>Logging</h4>
+<div class="cfg-row"><label>Level</label><select id="cfg-log-level" onchange="cfgChanged()"><option value="DEBUG">DEBUG</option><option value="INFO">INFO</option><option value="WARNING">WARNING</option><option value="ERROR">ERROR</option></select></div>
+<div class="cfg-row"><label>Dir</label><input type="text" class="t" id="cfg-log-dir" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Max Days</label><input type="number" class="n" id="cfg-log-max_days" onchange="cfgChanged()"></div>
+</div>
+
+<div class="cfg-section"><h4>Web UI</h4>
+<div class="cfg-row"><label>Host</label><input type="text" class="t" id="cfg-web_ui-host" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-web_ui-port" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Health Refr(s)</label><input type="number" class="n" id="cfg-web_ui-health_refresh" onchange="cfgChanged()"></div>
+</div>
+
 <div class="cfg-section"><h4>Upgrade IAP</h4>
-<div class="cfg-row"><label>Block Size</label><input type="number" class="n" id="cfg-upgrade-block_size" onchange="cfgChanged()" value="1024"></div>
-<div class="cfg-row"><label>Block Timeout</label><input type="number" class="n" id="cfg-upgrade-block_timeout" onchange="cfgChanged()" value="3"></div>
+<div class="cfg-row"><label>Block Size</label><input type="number" class="n" id="cfg-upgrade-block_size" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Block Timeout(s)</label><input type="number" class="n" id="cfg-upgrade-block_timeout" onchange="cfgChanged()" step="0.1"></div>
+<div class="cfg-row"><label>Auto Verify</label><input type="checkbox" id="cfg-upgrade-auto_verify" onchange="cfgChanged()"></div>
 </div>
+
 <div id="cfg-save-status" style="margin-top:10px"></div>
 </div>
 
@@ -259,9 +313,11 @@ function filterEvents(l){_evtFilter=l;['all','info','warn','error'].forEach(func
 function loadEvents(){fetch('/api/events?count=100').then(function(r){return r.json()}).then(function(d){var evs=d.events||[];var ht='';for(var i=evs.length-1;i>=0;i--){var e=evs[i];if(_evtFilter!=='all'&&e.level!==_evtFilter)continue;var dt=new Date(e.ts*1000);var ts=dt.toTimeString().substring(0,8);ht+='<div class="event-row"><span class="lev '+e.level+'">'+e.level.toUpperCase()+'</span><span class="ets">'+ts+'</span><span class="esrc">'+e.source+'</span><span class="emsg">'+e.message+'</span></div>'}document.getElementById('events-list').innerHTML=ht||'<div style="color:var(--dim);padding:20px;text-align:center">No events</div>'}).catch(function(){})}
 loadEvents();
 
-function loadConfigForm(){fetch('/api/config').then(function(r){return r.json()}).then(function(cfg){var mq=cfg.mqtt||{};document.getElementById('cfg-mqtt-enabled').checked=!!mq.enabled;document.getElementById('cfg-mqtt-broker').value=mq.broker||'';document.getElementById('cfg-mqtt-port').value=mq.port||1883;document.getElementById('cfg-mqtt-username').value=mq.username||'';document.getElementById('cfg-mqtt-password').value=mq.password||'';document.getElementById('cfg-mqtt-topic_prefix').value=mq.topic_prefix||'hangar/';var ml=cfg.mavlink||{};document.getElementById('cfg-mavlink-host').value=ml.host||'';document.getElementById('cfg-mavlink-port').value=ml.port||5760;var cam=cfg.camera||{};document.getElementById('cfg-camera-rtsp_url').value=cam.rtsp_url||'';var st=cfg.stm32||{};document.getElementById('cfg-stm32-port').value=st.port||'/dev/ttyACM0';document.getElementById('cfg-stm32-baudrate').value=st.baudrate||115200;var dc=cfg.decision||{};document.getElementById('cfg-decision-auto_open_on_rtl').checked=dc.auto_open_on_rtl!==false;document.getElementById('cfg-decision-low_battery_threshold').value=dc.low_battery_threshold||20;document.getElementById('cfg-decision-lost_timeout').value=dc.lost_timeout||30;var up=cfg.upgrade||{};document.getElementById('cfg-upgrade-block_size').value=up.block_size||1024;document.getElementById('cfg-upgrade-block_timeout').value=up.block_timeout||3}).catch(function(e){showToast('Load config failed: '+e.message,'error')})}
+function loadConfigForm(){fetch('/api/config').then(function(r){return r.json()}).then(function(cfg){var mq=cfg.mqtt||{};setVal('cfg-mqtt-enabled',!!mq.enabled,'check');setVal('cfg-mqtt-broker',mq.broker);setVal('cfg-mqtt-port',mq.port,1883);setVal('cfg-mqtt-client_id',mq.client_id,'hangar_001');setVal('cfg-mqtt-username',mq.username);setVal('cfg-mqtt-password',mq.password);setVal('cfg-mqtt-topic_prefix',mq.topic_prefix,'hangar/');setVal('cfg-mqtt-keepalive',mq.keepalive,30);setVal('cfg-mqtt-status_interval',mq.status_interval,5);setVal('cfg-mqtt-qos',mq.qos,1);setVal('cfg-mqtt-reconnect_min',mq.reconnect_min,2);setVal('cfg-mqtt-reconnect_max',mq.reconnect_max,60);var ml=cfg.mavlink||{};setVal('cfg-mavlink-host',ml.host);setVal('cfg-mavlink-port',ml.port,5760);setVal('cfg-mavlink-heartbeat_timeout',ml.heartbeat_timeout,5);setVal('cfg-mavlink-system_id',ml.system_id,255);setVal('cfg-mavlink-reconnect_interval',ml.reconnect_interval,3);var cam=cfg.camera||{};setVal('cfg-camera-enabled',cam.enabled!==false,'check');setVal('cfg-camera-ip',cam.ip,'10.6.3.57');setVal('cfg-camera-port',cam.port,554);setVal('cfg-camera-username',cam.username,'admin');setVal('cfg-camera-password',cam.password);setVal('cfg-camera-channel',cam.channel,1);setVal('cfg-camera-stream',cam.stream,0);setVal('cfg-camera-rtsp_url',cam.rtsp_url);setVal('cfg-camera-snapshot_interval',cam.snapshot_interval,30);setVal('cfg-camera-snapshot_dir',cam.snapshot_dir,'./data/snapshots');setVal('cfg-camera-snapshot_timeout',cam.snapshot_timeout,10);setVal('cfg-camera-ffmpeg_extra',cam.ffmpeg_extra);var st=cfg.stm32||{};setVal('cfg-stm32-port',st.port,'/dev/ttyACM0');setVal('cfg-stm32-baudrate',st.baudrate,115200);setVal('cfg-stm32-data_bits',st.data_bits,8);setVal('cfg-stm32-parity',st.parity,'N');setVal('cfg-stm32-stop_bits',st.stop_bits,1);setVal('cfg-stm32-cmd_timeout',st.cmd_timeout,0.5);setVal('cfg-stm32-cmd_retry',st.cmd_retry,3);setVal('cfg-stm32-status_interval',st.status_interval,1);var dc=cfg.decision||{};setVal('cfg-decision-auto_open_on_rtl',dc.auto_open_on_rtl!==false,'check');setVal('cfg-decision-low_battery_threshold',dc.low_battery_threshold,20);setVal('cfg-decision-lost_timeout',dc.lost_timeout,30);setVal('cfg-decision-rtl_alt_threshold',dc.rtl_alt_threshold,100);setVal('cfg-decision-door_open_delay',dc.door_open_delay,5);var wd=cfg.watchdog||{};setVal('cfg-watchdog-enabled',wd.enabled!==false,'check');setVal('cfg-watchdog-device',wd.device,'/dev/watchdog');setVal('cfg-watchdog-feed_interval',wd.feed_interval,30);var lg=cfg.log||{};setVal('cfg-log-level',lg.level,'INFO');setVal('cfg-log-dir',lg.dir,'./data/logs');setVal('cfg-log-max_days',lg.max_days,30);var wu=cfg.web_ui||{};setVal('cfg-web_ui-host',wu.host,'0.0.0.0');setVal('cfg-web_ui-port',wu.port,8080);setVal('cfg-web_ui-health_refresh',wu.health_refresh,3);var up=cfg.upgrade||{};setVal('cfg-upgrade-block_size',up.block_size,1024);setVal('cfg-upgrade-block_timeout',up.block_timeout,3.0);setVal('cfg-upgrade-auto_verify',up.auto_verify!==false,'check')}).catch(function(e){showToast('Load config failed: '+e.message,'error')})}
+function setVal(id,val,def){var el=document.getElementById(id);if(!el)return;if(def==='check'){el.checked=!!val}else if(el.tagName==='SELECT'){el.value=val!==undefined&&val!==null?String(val):String(def||'')}else{el.value=val!==undefined&&val!==null?val:(def!==undefined?def:'')}}
 function cfgChanged(){document.getElementById('cfg-save-status').innerHTML='<span class="badge yellow">UNSAVED</span>'}
-function saveConfig(){var cfg={mqtt:{enabled:document.getElementById('cfg-mqtt-enabled').checked,broker:document.getElementById('cfg-mqtt-broker').value,port:parseInt(document.getElementById('cfg-mqtt-port').value)||1883,username:document.getElementById('cfg-mqtt-username').value,password:document.getElementById('cfg-mqtt-password').value,topic_prefix:document.getElementById('cfg-mqtt-topic_prefix').value},mavlink:{host:document.getElementById('cfg-mavlink-host').value,port:parseInt(document.getElementById('cfg-mavlink-port').value)||5760},camera:{rtsp_url:document.getElementById('cfg-camera-rtsp_url').value},stm32:{port:document.getElementById('cfg-stm32-port').value,baudrate:parseInt(document.getElementById('cfg-stm32-baudrate').value)||115200},decision:{auto_open_on_rtl:document.getElementById('cfg-decision-auto_open_on_rtl').checked,low_battery_threshold:parseInt(document.getElementById('cfg-decision-low_battery_threshold').value)||20,lost_timeout:parseInt(document.getElementById('cfg-decision-lost_timeout').value)||30},upgrade:{block_size:parseInt(document.getElementById('cfg-upgrade-block_size').value)||1024,block_timeout:parseFloat(document.getElementById('cfg-upgrade-block_timeout').value)||3.0}};fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).then(function(r){return r.json()}).then(function(res){if(res.ok){document.getElementById('cfg-save-status').innerHTML='<span class="badge green">SAVED</span>';showToast('Config saved. Run: hangar reload','info')}else{document.getElementById('cfg-save-status').innerHTML='<span class="badge red">FAILED: '+res.error+'</span>';showToast('Save failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
+function getVal(id,def,type){var el=document.getElementById(id);if(!el)return def;if(type==='check')return el.checked;if(type==='int'){var v=parseInt(el.value);return isNaN(v)?def:v}if(type==='float'){var v=parseFloat(el.value);return isNaN(v)?def:v}return el.value||def}
+function saveConfig(){var cfg={mqtt:{enabled:getVal('cfg-mqtt-enabled',false,'check'),broker:getVal('cfg-mqtt-broker',''),port:getVal('cfg-mqtt-port',1883,'int'),client_id:getVal('cfg-mqtt-client_id','hangar_001'),username:getVal('cfg-mqtt-username',''),password:getVal('cfg-mqtt-password',''),topic_prefix:getVal('cfg-mqtt-topic_prefix','hangar/'),keepalive:getVal('cfg-mqtt-keepalive',30,'int'),status_interval:getVal('cfg-mqtt-status_interval',5,'int'),qos:getVal('cfg-mqtt-qos',1,'int'),reconnect_min:getVal('cfg-mqtt-reconnect_min',2,'int'),reconnect_max:getVal('cfg-mqtt-reconnect_max',60,'int')},mavlink:{host:getVal('cfg-mavlink-host',''),port:getVal('cfg-mavlink-port',5760,'int'),heartbeat_timeout:getVal('cfg-mavlink-heartbeat_timeout',5,'int'),system_id:getVal('cfg-mavlink-system_id',255,'int'),reconnect_interval:getVal('cfg-mavlink-reconnect_interval',3,'int')},camera:{enabled:getVal('cfg-camera-enabled',true,'check'),ip:getVal('cfg-camera-ip','10.6.3.57'),port:getVal('cfg-camera-port',554,'int'),username:getVal('cfg-camera-username','admin'),password:getVal('cfg-camera-password',''),channel:getVal('cfg-camera-channel',1,'int'),stream:getVal('cfg-camera-stream',0,'int'),rtsp_url:getVal('cfg-camera-rtsp_url',''),snapshot_interval:getVal('cfg-camera-snapshot_interval',30,'int'),snapshot_dir:getVal('cfg-camera-snapshot_dir','./data/snapshots'),snapshot_timeout:getVal('cfg-camera-snapshot_timeout',10,'int'),ffmpeg_extra:getVal('cfg-camera-ffmpeg_extra','')},stm32:{port:getVal('cfg-stm32-port','/dev/ttyACM0'),baudrate:getVal('cfg-stm32-baudrate',115200,'int'),data_bits:getVal('cfg-stm32-data_bits',8,'int'),parity:getVal('cfg-stm32-parity','N'),stop_bits:getVal('cfg-stm32-stop_bits',1,'int'),cmd_timeout:getVal('cfg-stm32-cmd_timeout',0.5,'float'),cmd_retry:getVal('cfg-stm32-cmd_retry',3,'int'),status_interval:getVal('cfg-stm32-status_interval',1,'int')},decision:{auto_open_on_rtl:getVal('cfg-decision-auto_open_on_rtl',true,'check'),low_battery_threshold:getVal('cfg-decision-low_battery_threshold',20,'int'),lost_timeout:getVal('cfg-decision-lost_timeout',30,'int'),rtl_alt_threshold:getVal('cfg-decision-rtl_alt_threshold',100,'int'),door_open_delay:getVal('cfg-decision-door_open_delay',5,'int')},watchdog:{enabled:getVal('cfg-watchdog-enabled',true,'check'),device:getVal('cfg-watchdog-device','/dev/watchdog'),feed_interval:getVal('cfg-watchdog-feed_interval',30,'int')},log:{level:getVal('cfg-log-level','INFO'),dir:getVal('cfg-log-dir','./data/logs'),max_days:getVal('cfg-log-max_days',30,'int')},web_ui:{host:getVal('cfg-web_ui-host','0.0.0.0'),port:getVal('cfg-web_ui-port',8080,'int'),health_refresh:getVal('cfg-web_ui-health_refresh',3,'int')},upgrade:{block_size:getVal('cfg-upgrade-block_size',1024,'int'),block_timeout:getVal('cfg-upgrade-block_timeout',3.0,'float'),auto_verify:getVal('cfg-upgrade-auto_verify',true,'check')}};fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).then(function(r){return r.json()}).then(function(res){if(res.ok){document.getElementById('cfg-save-status').innerHTML='<span class="badge green">SAVED</span>';showToast('Config saved. Run: hangar reload','info')}else{document.getElementById('cfg-save-status').innerHTML='<span class="badge red">FAILED: '+res.error+'</span>';showToast('Save failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
 
 function sendCmd(cmd){fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})}).then(function(r){return r.json()}).then(function(res){var el=document.getElementById('cmd-result');if(res.ok){el.innerHTML='<span class="badge green">OK: '+cmd+'</span>';showToast('Command sent: '+cmd,'info')}else{el.innerHTML='<span class="badge red">FAIL: '+res.error+'</span>';showToast('Failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
 function restartService(){if(!confirm('Restart service?'))return;fetch('/api/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json()}).then(function(res){showToast(res.msg||'Restart requested','info')})}

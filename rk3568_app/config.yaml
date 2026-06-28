@@ -1,53 +1,84 @@
 # ===== 日志 =====
 log:
-  level: INFO
+  level: INFO          # DEBUG | INFO | WARNING | ERROR
   dir: ./data/logs
   max_days: 30
 
-# ===== MQTT =====
+# ===== MQTT 地面站 =====
 mqtt:
+  enabled: false
   broker: "请填写Broker地址"
   port: 1883
   client_id: "hangar_001"
   username: "admin"
   password: "请填写密码"
-  keepalive: 30
-  status_interval: 5
+  keepalive: 30            # 心跳间隔(秒)
+  status_interval: 5       # 状态上报间隔(秒)
+  topic_prefix: "hangar/"  # MQTT主题前缀
+  qos: 1                   # 0|1|2
+  reconnect_min: 2         # 重连最小间隔(秒)
+  reconnect_max: 60        # 重连最大间隔(秒)
 
-# ===== MAVLink (无人机) =====
+# ===== MAVLink 无人机 =====
 mavlink:
   host: "请填写4G模块IP"
   port: 5760
-  heartbeat_timeout: 5
-  system_id: 255
+  heartbeat_timeout: 5     # 心跳超时(秒)
+  system_id: 255           # MAVLink系统ID
+  reconnect_interval: 3    # 重连间隔(秒)
 
 # ===== STM32 串口 =====
 stm32:
   port: "/dev/ttyACM0"
   baudrate: 115200
-  cmd_timeout: 0.5
-  cmd_retry: 3
+  data_bits: 8
+  parity: "N"              # N|E|O
+  stop_bits: 1
+  cmd_timeout: 0.5         # 指令超时(秒)
+  cmd_retry: 3             # 重试次数
+  status_interval: 1       # 主动上报间隔(秒)
 
-# ===== 摄像头 =====
+# ===== 摄像头 RTSP =====
 camera:
   enabled: true
-  rtsp_url: "rtsp://10.6.3.57:554/user=admin&password=&channel=1&stream=0.sdp?"
-  snapshot_interval: 30
+  # --- 方式1: 结构化配置 (推荐) ---
+  ip: "10.6.3.57"
+  port: 554
+  username: "admin"
+  password: ""
+  channel: 1
+  stream: 0                # 0=主码流 1=子码流
+  # --- 方式2: 直接用RTSP URL (优先级更高) ---
+  rtsp_url: ""             # 留空则用结构化字段自动拼接
+  # --- 抓图参数 ---
+  snapshot_interval: 30    # 自动抓图间隔(秒), 0=禁用
   snapshot_dir: "./data/snapshots"
+  snapshot_timeout: 10     # ffmpeg超时(秒)
+  ffmpeg_extra: ""         # ffmpeg额外参数, 如 "-vf fps=1"
 
-# ===== 决策 =====
+# ===== 决策引擎 =====
 decision:
   auto_open_on_rtl: true
-  low_battery_threshold: 20
-  lost_timeout: 30
+  low_battery_threshold: 20      # 低电量阈值(%)
+  lost_timeout: 30               # 失联超时(秒)
+  rtl_alt_threshold: 100         # RTL高度阈值(m)
+  door_open_delay: 5             # 开门延迟(秒)
 
 # ===== 看门狗 =====
 watchdog:
   enabled: true
   device: "/dev/watchdog"
-  feed_interval: 30
+  feed_interval: 30              # 喂狗间隔(秒)
 
 # ===== Web 管理看板 =====
 web_ui:
   host: "0.0.0.0"
   port: 8080
+  health_refresh: 3              # 健康检查刷新间隔(秒)
+  alert_history: 100             # 告警历史条数
+
+# ===== 升级管理 =====
+upgrade:
+  block_size: 1024               # IAP传输块大小
+  block_timeout: 3.0             # 块超时(秒)
+  auto_verify: true              # 升级后自动校验

@@ -15,12 +15,30 @@ class CameraCapture:
 
     def __init__(self, config: dict, app_state=None):
         self._enabled = config.get("enabled", True)
-        self._rtsp_url = config.get("rtsp_url", "")
+        self._rtsp_url = self._build_rtsp_url(config)
+        self._snapshot_timeout = config.get("snapshot_timeout", 10)
+        self._ffmpeg_extra = config.get("ffmpeg_extra", "")
         self._interval = config.get("snapshot_interval", 30)
         self._snapshot_dir = config.get("snapshot_dir", "./data/snapshots")
         self._app_state = app_state
         self._running = False
         self._timer = None
+
+    def _build_rtsp_url(self, config):
+        """Build RTSP URL from structured fields or use direct override."""
+        direct = config.get("rtsp_url", "")
+        if direct:
+            return direct
+        ip = config.get("ip", "192.168.1.64")
+        port = config.get("port", 554)
+        user = config.get("username", "admin")
+        pwd = config.get("password", "")
+        ch = config.get("channel", 1)
+        stream = config.get("stream", 0)
+        # Build standard RTSP URL
+        url = f"rtsp://{ip}:{port}/user={user}&password={pwd}&channel={ch}&stream={stream}.sdp?"
+        logger.debug("Built RTSP URL: %s", url)
+        return url
 
     def start(self):
         if not self._enabled or not self._rtsp_url:
