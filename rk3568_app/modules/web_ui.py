@@ -190,6 +190,30 @@ def _save_yaml_config(path, cfg):
         yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
 
 
+
+LOGIN_HTML = """<!DOCTYPE html>
+<html lang="zh">
+<head><meta charset="UTF-8"><title>ANMK8639 Login</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#21262d;--text:#c9d1d9;--accent:#1f6feb}
+body{background:var(--bg);color:var(--text);display:flex;justify-content:center;align-items:center;height:100vh;font:13px Segoe UI,Microsoft YaHei,sans-serif}
+.login{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:40px;width:340px;text-align:center}
+.login h1{font-size:18px;margin-bottom:24px}.login h1 span{color:var(--accent)}
+.login input{width:100%;padding:10px;margin:8px 0;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:14px}
+.login button{width:100%;padding:10px;margin-top:12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px}
+.login .err{color:#da3633;font-size:12px;margin-top:8px}
+</style></head>
+<body><div class="login">
+<h1>ANMK8639 <span>Hangar Control</span></h1>
+<input type="password" id="key" placeholder="API Key" autofocus>
+<button onclick="login()">Login</button>
+<div class="err" id="err"></div>
+</div>
+<script>
+function login(){fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:document.getElementById('key').value})}).then(function(r){return r.json()}).then(function(d){if(d.ok){document.cookie='hangar_key='+d.token+';path=/';location.reload()}else{document.getElementById('err').textContent=d.error}})}
+</script>
+</body></html>"""
+
 class WebUI:
     """嵌入式 HTTP 服务器，提供专业级管理仪表盘。"""
 
@@ -202,6 +226,7 @@ class WebUI:
         self._upgrade_mgr = upgrade_mgr
         self._server = None
         self._config_path = "config.yaml"
+        self._api_key = config.get("api_key", "")
 
     def start(self):
         handler = self._make_handler()
@@ -221,6 +246,12 @@ class WebUI:
         class Handler(BaseHTTPRequestHandler):
             def log_message(self, fmt, *args):
                 logger.debug("HTTP %s", args[0] if args else fmt)
+
+            def _check_auth(self):
+                if not ui._api_key:
+                    return True
+                key = self.headers.get("X-API-Key", "")
+                return key == ui._api_key
 
             def _json(self, data, code=200):
                 body = json.dumps(data, ensure_ascii=False).encode()
@@ -247,6 +278,18 @@ class WebUI:
             def do_GET(self):
                 path = urlparse(self.path).path
                 qs = parse_qs(urlparse(self.path).query)
+
+                # Auth check
+                if not self._check_auth():
+                    if path == "/":
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/html;charset=utf-8")
+                        self.end_headers()
+                        self.wfile.write(LOGIN_HTML.encode())
+                        return
+                    else:
+                        self._json({"error": "Unauthorized"}, 401)
+                        return
 
                 if path == "/":
                     html = _load_dashboard()
@@ -386,10 +429,21 @@ class WebUI:
 
             def do_POST(self):
                 path = urlparse(self.path).path
+
+                # Auth: /api/auth is the only unauthenticated POST
+                if path != "/api/auth" and not self._check_auth():
+                    self._json({"error": "Unauthorized"}, 401)
+                    return
                 length = int(self.headers.get("Content-Length", 0))
                 body = json.loads(self.rfile.read(length)) if length else {}
 
-                if path == "/api/command":
+                if path == "/api/auth":
+                    if body.get("key") == ui._api_key:
+                        self._json({"ok": True, "token": ui._api_key})
+                    else:
+                        self._json({"ok": False, "error": "Invalid API key"}, 401)
+
+                elif path == "/api/command":
                     cmd = body.get("cmd", "")
                     cmd_map = {"OPEN_DOOR": 0x01, "CLOSE_DOOR": 0x02, "LOCK": 0x03, "UNLOCK": 0x04}
                     code = cmd_map.get(cmd)

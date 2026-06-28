@@ -104,35 +104,63 @@ class AppState:
             return result
 
     def health(self) -> dict:
+        """四级健康检查: healthy(绿) / stale(黄) / degraded(橙) / dead(红)
+        每个模块返回 status + age, 整体取最差状态。
+        """
         now = time.time()
         with self._lock:
             d = self._data
+            mqtt_conn = d["system"]["mqtt_connected"]
             mqtt_last = d["system"]["last_mqtt_msg"]
             hb_last = d["drone"]["last_heartbeat"]
             pos_last = d["drone"]["last_position_update"]
+            stm32_conn = d["hangar"]["stm32_connected"]
             stm32_last = d["hangar"]["last_status_update"]
             cam_last = d["system"]["last_camera_snapshot"]
 
-        def age(ts):
-            return round(now - ts, 1) if ts > 0 else None
+        def _status(connected, ts, stale_s=5, dead_s=30):
+            """返回 (status, age_sec).
+            status: 'healthy' | 'stale' | 'dead'
+            """
+            if ts is None or ts <= 0:
+                return ("dead", None) if not connected else ("dead", None)
+            age = round(now - ts, 1)
+            if not connected:
+                return ("dead", age)
+            if age < stale_s:
+                return ("healthy", age)
+            elif age < dead_s:
+                return ("stale", age)
+            else:
+                return ("dead", age)
+
+        mav_s, mav_age = _status(d["drone"]["connected"], hb_last)
+        mqtt_s, mqtt_age = _status(mqtt_conn, mqtt_last)
+        stm_s, stm_age = _status(stm32_conn, stm32_last)
+        cam_s, cam_age = _status(True, cam_last, 30, 120)  # 摄像头30s/120s阈值放宽
 
         result = {
-            "mqtt": {"connected": d["system"]["mqtt_connected"], "last_msg_sec": age(mqtt_last)},
-            "mavlink": {"connected": d["drone"]["connected"], "last_hb_sec": age(hb_last), "last_pos_sec": age(pos_last)},
-            "stm32": {"connected": d["hangar"]["stm32_connected"], "last_status_sec": age(stm32_last)},
-            "camera": {"last_snapshot_sec": age(cam_last)},
+            "mavlink": {"status": mav_s, "connected": d["drone"]["connected"], "last_hb_sec": mav_age, "last_pos_sec": round(now - pos_last, 1) if pos_last > 0 else None},
+            "mqtt": {"status": mqtt_s, "connected": mqtt_conn, "last_msg_sec": mqtt_age},
+            "stm32": {"status": stm_s, "connected": stm32_conn, "last_status_sec": stm_age},
+            "camera": {"status": cam_s, "last_snapshot_sec": cam_age},
             "uptime": self.uptime,
         }
 
-        issues = 0
-        if not result["mavlink"]["connected"]:
-            issues += 1
-        if not result["stm32"]["connected"]:
-            issues += 1
+        # 整体 = 最差模块状态
+        levels = {"healthy": 0, "stale": 1, "degraded": 2, "dead": 3}
+        worst_level = 0
+        for mod in ["mavlink", "mqtt", "stm32", "camera"]:
+            s = result[mod]["status"]
+            lv = levels.get(s, 3)
+            if lv > worst_level:
+                worst_level = lv
 
-        if issues >= 2:
+        if worst_level == 3:
             result["overall"] = "critical"
-        elif issues >= 1:
+        elif worst_level >= 2:
+            result["overall"] = "degraded"
+        elif worst_level >= 1:
             result["overall"] = "degraded"
         else:
             result["overall"] = "healthy"

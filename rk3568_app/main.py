@@ -170,10 +170,14 @@ def _print_status(app_state, config):
     stm_ago = str(int(time.time()-stm["last_status_sec"]))+"s" if stm["last_status_sec"] else "--"
     cam_ago = str(int(time.time()-cam.get("last_snapshot_sec",0)))+"s" if cam.get("last_snapshot_sec") else "--"
 
-    mav_ok = "OK" if mav["connected"] else "DOWN"
-    mqtt_ok = "OK" if mqtt["connected"] else "DOWN"
-    stm_ok = "OK" if stm["connected"] else "DOWN"
-    cam_ok = "OK" if cam.get("last_snapshot_sec") else "DOWN"
+    # 四级状态映射
+    def _s(mod, key="status"):
+        s = mod.get(key, "dead")
+        return {"healthy":"OK","stale":"STALE","degraded":"DEGR","dead":"DOWN"}.get(s, "??")
+    mav_ok = _s(mav)
+    mqtt_ok = _s(mqtt)
+    stm_ok = _s(stm)
+    cam_ok = _s(cam)
 
     print("")
     print("=== STATUS " + time.strftime("%H:%M:%S") + " | UPTIME " + uptime + " | Web :" + str(config.get("web_ui",{}).get("port",8080)) + " ===")

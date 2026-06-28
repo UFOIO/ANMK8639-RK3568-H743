@@ -1,6 +1,7 @@
 # ===== 日志 =====
 log:
   level: INFO          # DEBUG | INFO | WARNING | ERROR
+  format: "text"        # text | json  (json适合ELK/Loki日志系统)
   dir: ./data/logs
   max_days: 30
 
@@ -74,6 +75,7 @@ watchdog:
 web_ui:
   host: "0.0.0.0"
   port: 8080
+  api_key: ""                   # Web认证密钥(留空=无需认证)
   health_refresh: 3              # 健康检查刷新间隔(秒)
   alert_history: 100             # 告警历史条数
 
