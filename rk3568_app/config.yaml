@@ -34,7 +34,8 @@ mavlink:
 
 # ===== STM32 串口 =====
 stm32:
-  port: "/dev/ttyACM0"
+  # 串口设备: 默认/dev/ttyUSB0，避免与MAVLink冲突
+  port: "/dev/ttyUSB0"
   baudrate: 115200
   data_bits: 8
   parity: "N"              # N|E|O

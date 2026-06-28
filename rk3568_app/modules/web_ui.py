@@ -424,20 +424,26 @@ class WebUI:
                         return
                     try:
                         _save_yaml_config(ui._config_path, existing)
-                        ui._app_state.log_event("webui", "info", "用户更新了配置文件(结构化)")
-                        # Auto-reload config: send SIGHUP to main process (Linux only)
-                        try:
-                            if hasattr(signal, "SIGHUP"):
-                                os.kill(os.getpid(), signal.SIGHUP)
-                        except Exception:
-                            pass
-                        self._json({"ok": True, "reloaded": True})
+                        ui._app_state.log_event("webui", "info", "用户更新了配置文件")
+                        # Auto-restart service so all params (incl. connection) take effect
+                        self._json({"ok": True, "msg": "配置已保存，服务即将重启生效..."})
+                        def _do_restart():
+                            import time
+                            time.sleep(1)
+                            os.system("systemctl restart hangar")
+                        threading.Thread(target=_do_restart, daemon=True).start()
                     except Exception as e:
                         self._json({"ok": False, "error": str(e)})
 
                 elif path == "/api/restart":
                     ui._app_state.log_event("webui", "warn", "用户请求重启服务")
-                    self._json({"ok": True, "msg": "请手动执行: sudo systemctl restart hangar"})
+                    self._json({"ok": True, "msg": "服务即将重启..."})
+                    def _do_restart():
+                        import os, time
+                        time.sleep(1)
+                        os.system("systemctl restart hangar")
+                    threading.Thread(target=_do_restart, daemon=True).start()
+
 
                 elif path == "/api/camera/snapshot":
                     try:

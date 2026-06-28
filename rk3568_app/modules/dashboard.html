@@ -195,7 +195,16 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       <div class="cfg-row"><label>RTSP URL (直接填写)</label><input id="cfg-camera-rtsp_url" placeholder="rtsp://... (留空则用上方字段拼接)"></div>
     </div>
     <div class="cfg-section"><h3>STM32 串口 <button class="btn btn-blue btn-sm" onclick="saveSection(`"stm32`")">[保存]</button> <span id="cfg-save-stm32"></span></h3>
-      <div class="cfg-row"><label>串口设备</label><input id="cfg-stm32-port" placeholder="/dev/ttyACM0"></div>
+      <div class="cfg-row"><label>串口设备</label>
+        <select id="cfg-stm32-device" onchange="onStmDeviceChange()">
+          <option value="/dev/ttyUSB0">/dev/ttyUSB0 (常用)</option>
+          <option value="/dev/ttyUSB1">/dev/ttyUSB1</option>
+          <option value="/dev/ttyACM0">/dev/ttyACM0 (MAVLink在用)</option>
+          <option value="/dev/ttyACM1">/dev/ttyACM1</option>
+          <option value="__other__">自定义路径...</option>
+        </select>
+        <input id="cfg-stm32-device-custom" placeholder="输入设备路径，如 /dev/ttyXXX" style="display:none;margin-top:4px">
+      </div>
       <div class="cfg-row"><label>波特率</label><input id="cfg-stm32-baudrate" type="number" placeholder="115200"></div>
     </div>
     <div class="cfg-section"><h3>决策引擎 <button class="btn btn-blue btn-sm" onclick="saveSection(`"decision`")">[保存]</button> <span id="cfg-save-decision"></span></h3>
@@ -220,7 +229,7 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
   <div class="panel"><h2>>> 系统操作</h2>
     <div class="cmd-grid">
       <button class="btn btn-blue" onclick="captureSnapshot()">[手动截图]</button>
-      <button class="btn btn-red" onclick="restartService()">[重启服务]</button>
+      <button class="btn btn-red" onclick="restartService()">[重启服务]</button> <button class="btn btn-red" onclick="rebootDevice()">[重启终端]</button>
     </div>
   </div>
   <div class="panel"><h2>>> 决策规则</h2><div id="decision-rules" style="color:var(--dim)">从配置加载...</div></div>
@@ -404,6 +413,35 @@ function onMavConnChange() {
     ser.style.display = v.value === "serial" ? "" : "none";
   }
 }
+function onStmDeviceChange() {
+  var sel = document.getElementById("cfg-stm32-device");
+  var custom = document.getElementById("cfg-stm32-device-custom");
+  if (sel && custom) {
+    custom.style.display = sel.value === "__other__" ? "" : "none";
+  }
+}
+function _getStm32Port() {
+  var sel = document.getElementById("cfg-stm32-device");
+  if (!sel) return "/dev/ttyUSB0";
+  if (sel.value === "__other__") {
+    var cus = document.getElementById("cfg-stm32-device-custom");
+    return (cus && cus.value) ? cus.value : "/dev/ttyUSB0";
+  }
+  return sel.value;
+}
+function _setStm32Device(port) {
+  var sel = document.getElementById("cfg-stm32-device");
+  var custom = document.getElementById("cfg-stm32-device-custom");
+  if (!sel) return;
+  var known = ["/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyACM0","/dev/ttyACM1"];
+  if (known.indexOf(port) >= 0) {
+    sel.value = port;
+    if (custom) custom.style.display = "none";
+  } else {
+    sel.value = "__other__";
+    if (custom) { custom.value = port || ""; custom.style.display = ""; }
+  }
+}
 
 // ====== 配置加载/保存 ======
 function loadConfig() {
@@ -429,7 +467,7 @@ function loadConfig() {
       setVal("cfg-camera-password", (cfg.camera||{}).password || "");
       setVal("cfg-camera-channel", (cfg.camera||{}).channel || 1);
       setVal("cfg-camera-rtsp_url", (cfg.camera||{}).rtsp_url || "");
-      setVal("cfg-stm32-port", (cfg.stm32||{}).port || "/dev/ttyACM0");
+      _setStm32Device((cfg.stm32||{}).port || "/dev/ttyUSB0");
       setVal("cfg-stm32-baudrate", (cfg.stm32||{}).baudrate || 115200);
       setVal("cfg-decision-auto_open_on_rtl", (cfg.decision||{}).auto_open_on_rtl ? "true" : "false");
       setVal("cfg-decision-low_battery_threshold", (cfg.decision||{}).low_battery_threshold || 20);
@@ -453,6 +491,39 @@ function gv(id, def, t) {
   return el.value;
 }
 
+// Global save all config sections
+function saveConfig() {
+  var st = document.getElementById("cfg-save-status");
+  var all = {};
+  all.mqtt = {enabled: gv("cfg-mqtt-enabled","false")==="true", broker: gv("cfg-mqtt-broker",""), port: gv("cfg-mqtt-port",1883,"i"), username: gv("cfg-mqtt-username",""), password: gv("cfg-mqtt-password",""), topic_prefix: gv("cfg-mqtt-topic_prefix","hangar/")};
+  all.mavlink = {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i")};
+  all.camera = {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")};
+  all.stm32 = {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")};
+  all.decision = {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")};
+  fetch("/api/config", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(all)})
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.ok) {
+        if (st) st.innerHTML = ' <span class="badge green">已保存</span>';
+        showToast("配置已保存，服务正在自动重启，稍后即生效...", "info");
+        setTimeout(function() { if (st) st.innerHTML = ""; }, 3000);
+      } else {
+        var det = res.details || [];
+        if (st) st.innerHTML = ' <span class="badge red">失败</span>';
+        showToast("保存失败: " + (res.error || "未知错误") + (det.length ? " - " + det.join(", ") : ""), "error");
+      }
+    })
+    .catch(function(e) { showToast("错误: " + e.message, "error"); });
+}
+
+function rebootDevice() {
+  if (!confirm("确定重启整个 RK3568 板卡？\n所有连接将断开，约 30-60 秒后恢复。")) return;
+  fetch("/api/reboot", {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"})
+    .then(function(r) { return r.json(); })
+    .then(function(res) { showToast(res.msg || "终端即将重启...", "info"); })
+    .catch(function(e) { showToast("错误: " + e.message, "error"); });
+}
+
 function saveSection(section) {
   var sections = {
     mqtt: function() {
@@ -465,7 +536,7 @@ function saveSection(section) {
       return {camera: {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")}};
     },
     stm32: function() {
-      return {stm32: {port: gv("cfg-stm32-port","/dev/ttyACM0"), baudrate: gv("cfg-stm32-baudrate",115200,"i")}};
+      return {stm32: {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")}};
     },
     decision: function() {
       return {decision: {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")}};
@@ -480,7 +551,7 @@ function saveSection(section) {
     .then(function(res) {
       if (res.ok) {
         if (st) st.innerHTML = ' <span class="badge green">已保存</span>';
-        showToast("配置已保存，执行 hangar reload 生效", "info");
+        showToast("配置已保存，服务正在自动重启，稍后即生效...", "info");
         setTimeout(function() { if (st) st.innerHTML = ''; }, 3000);
       } else {
         var det = res.details || [];
@@ -519,6 +590,7 @@ function restartService() {
     .then(function(res) { showToast(res.msg || "已发送重启请求", "info"); })
     .catch(function(e) { showToast("错误: " + e.message, "error"); });
 }
+
 
 function captureSnapshot() {
   showToast("正在截图...", "info");
