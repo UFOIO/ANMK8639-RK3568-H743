@@ -16,8 +16,11 @@ class MAVLinkClient:
     """MAVLink TCP 客户端。连接无人机4G图数一体模块。"""
 
     def __init__(self, config: dict, event_bus, app_state):
+        self._connection = config.get("connection", "tcp")
         self._host = config.get("host", "127.0.0.1")
         self._port = config.get("port", 5760)
+        self._device = config.get("device", "/dev/ttyACM0")
+        self._baudrate = config.get("baudrate", 115200)
         self._hb_timeout = config.get("heartbeat_timeout", 5)
         self._system_id = config.get("system_id", 255)
 
@@ -32,7 +35,10 @@ class MAVLinkClient:
         self._running = True
         t = threading.Thread(target=self._recv_loop, daemon=True)
         t.start()
-        logger.info("MAVLink started -> %s:%d", self._host, self._port)
+        if self._connection == "serial":
+            logger.info("MAVLink started -> serial:%s @ %d", self._device, self._baudrate)
+        else:
+            logger.info("MAVLink started -> %s:%d", self._host, self._port)
         self._app_state.log_event("mavlink", "info", "MAVLink模块已启动，等待无人机连接")
 
     def stop(self):
@@ -44,17 +50,25 @@ class MAVLinkClient:
         self._app_state.log_event("mavlink", "info", "MAVLink模块已停止")
 
     def _connect(self) -> bool:
-        if not self._host or "\u8bf7\u586b" in self._host:
-            return False
         try:
-            conn_str = f"tcp:{self._host}:{self._port}"
-            self._mav = mavutil.mavlink_connection(
-                conn_str, source_system=self._system_id
-            )
-            logger.info("MAVLink TCP connected: %s", conn_str)
-            return True
+            if self._connection == "serial":
+                conn_str = f"{self._device}"
+                self._mav = mavutil.mavlink_connection(
+                    conn_str, baud=self._baudrate, source_system=self._system_id
+                )
+                logger.info("MAVLink serial connected: %s @ %d", self._device, self._baudrate)
+                return True
+            else:
+                if not self._host or "\u8bf7\u586b" in self._host:
+                    return False
+                conn_str = f"tcp:{self._host}:{self._port}"
+                self._mav = mavutil.mavlink_connection(
+                    conn_str, source_system=self._system_id
+                )
+                logger.info("MAVLink TCP connected: %s", conn_str)
+                return True
         except Exception:
-            logger.error("MAVLink connect failed: %s:%d (will retry)", self._host, self._port)
+            logger.error("MAVLink connect failed (will retry)")
             return False
 
     def _recv_loop(self):
@@ -114,7 +128,7 @@ class MAVLinkClient:
         self._app_state.set("drone.last_heartbeat", self._last_hb)
 
         self._event_bus.publish("DRONE_HEARTBEAT", {"mode": flight_mode, "armed": armed})
-        print("MAVLink HB: mode=" + str(flight_mode, flush=True) + " armed=" + str(armed))
+        print("MAVLink HB: mode=" + str(flight_mode) + " armed=" + str(armed), flush=True)
 
         if not was_connected:
             self._app_state.log_event("mavlink", "info",
@@ -131,7 +145,7 @@ class MAVLinkClient:
         self._app_state.set("drone.alt", msg.relative_alt / 1000.0)
         self._app_state.set("drone.heading", msg.hdg // 100)
         self._app_state.set("drone.last_position_update", time.time())
-        print("MAVLink GPS: lat=" + str(lat, flush=True)[:8] + " lon=" + str(lon)[:8] + " alt=" + str(round(msg.relative_alt/1000.0,1)) + "m sats=" + str(msg.satellites_visible) + " fix=" + str(msg.fix_type))
+        print("MAVLink GPS: lat=" + str(lat)[:8] + " lon=" + str(lon)[:8] + " alt=" + str(round(msg.relative_alt/1000.0,1)) + "m sats=" + str(msg.satellites_visible) + " fix=" + str(msg.fix_type), flush=True)
         self._event_bus.publish("DRONE_POSITION", {
             "lat": lat, "lon": lon,
             "alt": msg.relative_alt / 1000.0,
@@ -157,7 +171,7 @@ class MAVLinkClient:
             voltage = msg.voltages[0] / 1000.0
         self._app_state.set("drone.battery_remaining", remaining)
         self._app_state.set("drone.battery_voltage", voltage)
-        print("MAVLink BATT: " + str(remaining, flush=True) + "% " + str(round(voltage/1000.0,1)) + "V")
+        print("MAVLink BATT: " + str(remaining) + "% " + str(round(voltage/1000.0,1)) + "V", flush=True)
 
         threshold = 20
         if 0 < remaining < threshold:

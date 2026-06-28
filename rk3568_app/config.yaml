@@ -22,8 +22,12 @@ mqtt:
 
 # ===== MAVLink 无人机 =====
 mavlink:
+  # --- 连接方式: tcp (4G图传) 或 serial (USB直连飞控) ---
+  connection: "tcp"
   host: "请填写4G模块IP"
   port: 5760
+  device: "/dev/ttyACM0"
+  baudrate: 115200
   heartbeat_timeout: 5     # 心跳超时(秒)
   system_id: 255           # MAVLink系统ID
   reconnect_interval: 3    # 重连间隔(秒)

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Web 管理仪表盘 — 专业级航空风格。
 零外部依赖，基于 Python 标准库 http.server。
 功能：心跳脉冲、告警弹窗、连接健康面板、事件日志、结构化配置管理、指令下发、
@@ -44,12 +44,30 @@ logger = logging.getLogger(__name__)
 
 _DASHBOARD_PATH = os.path.join(os.path.dirname(__file__), "dashboard.html")
 
+VALID_QOS = {0, 1, 2}
+VALID_BAUDRATES = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600}
+VALID_PARITY = {"N", "E", "O"}
+VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR"}
+
+
 def _load_dashboard():
     try:
         with open(_DASHBOARD_PATH, "r", encoding="utf-8") as f:
             return f.read()
     except Exception:
         return "<h1>Dashboard HTML not found at " + _DASHBOARD_PATH + "</h1>"
+
+
+def _load_yaml_config(path):
+    """加载 YAML 配置，返回 dict。"""
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def _validate_config(cfg):
+    """校验配置合法性，返回 (ok, errors)。"""
+    errors = []
+
     def _chk_port(v, name):
         if not isinstance(v, int) or v < 1 or v > 65535:
             errors.append(name + "端口必须在1-65535之间, 当前值: " + str(v))
@@ -390,14 +408,30 @@ class WebUI:
                         self._json({"ok": False, "error": "unknown cmd or STM32 offline"})
 
                 elif path == "/api/config":
-                    ok, errs = _validate_config(body)
+                    # Merge with existing config (partial save support)
+                    try:
+                        existing = _load_yaml_config(ui._config_path)
+                        for key in body:
+                            if isinstance(body[key], dict) and isinstance(existing.get(key), dict):
+                                existing[key].update(body[key])
+                            else:
+                                existing[key] = body[key]
+                    except Exception:
+                        existing = body
+                    ok, errs = _validate_config(existing)
                     if not ok:
                         self._json({"ok": False, "error": "配置校验失败", "details": errs})
                         return
                     try:
-                        _save_yaml_config(ui._config_path, body)
+                        _save_yaml_config(ui._config_path, existing)
                         ui._app_state.log_event("webui", "info", "用户更新了配置文件(结构化)")
-                        self._json({"ok": True})
+                        # Auto-reload config: send SIGHUP to main process (Linux only)
+                        try:
+                            if hasattr(signal, "SIGHUP"):
+                                os.kill(os.getpid(), signal.SIGHUP)
+                        except Exception:
+                            pass
+                        self._json({"ok": True, "reloaded": True})
                     except Exception as e:
                         self._json({"ok": False, "error": str(e)})
 
@@ -459,3 +493,5 @@ class WebUI:
                 self.end_headers()
 
         return Handler
+
+

@@ -89,7 +89,7 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 
 /* 按钮 */
 .btn{padding:8px 16px;border:none;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font);transition:all 0.15s}
-.btn-blue{background:var(--blue);color:#000}
+.btn-blue{background:var(--blue);color:#000}.btn-sm{padding:4px 10px;font-size:11px}
 .btn-blue:hover{opacity:0.85}
 .btn-green{background:var(--green);color:#000}
 .btn-green:hover{opacity:0.85}
@@ -166,7 +166,7 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 <div class="tab" id="tab-config">
   <div class="panel">
     <h2>>> 系统配置 <button class="btn btn-blue" style="margin-left:auto" onclick="saveConfig()">[保存配置]</button> <span id="cfg-save-status"></span></h2>
-    <div class="cfg-section"><h3>MQTT 地面站</h3>
+    <div class="cfg-section"><h3>MQTT 地面站 <button class="btn btn-blue btn-sm" onclick="saveSection(`"mqtt`")">[保存]</button> <span id="cfg-save-mqtt"></span></h3>
       <div class="cfg-row"><label>启用</label><input type="checkbox" id="cfg-mqtt-enabled"></div>
       <div class="cfg-row"><label>Broker 地址</label><input id="cfg-mqtt-broker" placeholder="mqtt.example.com"></div>
       <div class="cfg-row"><label>端口</label><input id="cfg-mqtt-port" type="number" placeholder="1883"></div>
@@ -174,12 +174,19 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       <div class="cfg-row"><label>密码</label><input id="cfg-mqtt-password" type="password" placeholder="密码"></div>
       <div class="cfg-row"><label>Topic 前缀</label><input id="cfg-mqtt-topic_prefix" placeholder="hangar/"></div>
     </div>
-    <div class="cfg-section"><h3>MAVLink 无人机</h3>
-      <div class="cfg-row"><label>4G模块IP</label><input id="cfg-mavlink-host" placeholder="192.168.x.x"></div>
-      <div class="cfg-row"><label>端口</label><input id="cfg-mavlink-port" type="number" placeholder="5760"></div>
+    <div class="cfg-section"><h3>MAVLink 无人机 <button class="btn btn-blue btn-sm" onclick="saveSection(`"mavlink`")">[保存]</button> <span id="cfg-save-mavlink"></span></h3>
+      <div class="cfg-row"><label>连接方式</label><select id="cfg-mavlink-connection" onchange="onMavConnChange()"><option value="tcp">TCP (4G图传)</option><option value="serial">串口 (USB直连)</option></select></div>
+      <div id="mav-tcp-fields">
+        <div class="cfg-row"><label>4G模块IP</label><input id="cfg-mavlink-host" placeholder="192.168.x.x"></div>
+        <div class="cfg-row"><label>端口</label><input id="cfg-mavlink-port" type="number" placeholder="5760"></div>
+      </div>
+      <div id="mav-serial-fields" style="display:none">
+        <div class="cfg-row"><label>串口设备</label><input id="cfg-mavlink-device" placeholder="/dev/ttyACM0"></div>
+        <div class="cfg-row"><label>波特率</label><input id="cfg-mavlink-baudrate" type="number" placeholder="115200"></div>
+      </div>
       <div class="cfg-row"><label>心跳超时(秒)</label><input id="cfg-mavlink-hb_timeout" type="number" placeholder="5"></div>
     </div>
-    <div class="cfg-section"><h3>摄像头 RTSP</h3>
+    <div class="cfg-section"><h3>摄像头 RTSP <button class="btn btn-blue btn-sm" onclick="saveSection(`"camera`")">[保存]</button> <span id="cfg-save-camera"></span></h3>
       <div class="cfg-row"><label>IP 地址</label><input id="cfg-camera-ip" placeholder="10.6.3.57"></div>
       <div class="cfg-row"><label>端口</label><input id="cfg-camera-port" type="number" placeholder="554"></div>
       <div class="cfg-row"><label>用户名</label><input id="cfg-camera-username" placeholder="admin"></div>
@@ -187,11 +194,11 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       <div class="cfg-row"><label>通道</label><input id="cfg-camera-channel" type="number" placeholder="1"></div>
       <div class="cfg-row"><label>RTSP URL (直接填写)</label><input id="cfg-camera-rtsp_url" placeholder="rtsp://... (留空则用上方字段拼接)"></div>
     </div>
-    <div class="cfg-section"><h3>STM32 串口</h3>
+    <div class="cfg-section"><h3>STM32 串口 <button class="btn btn-blue btn-sm" onclick="saveSection(`"stm32`")">[保存]</button> <span id="cfg-save-stm32"></span></h3>
       <div class="cfg-row"><label>串口设备</label><input id="cfg-stm32-port" placeholder="/dev/ttyACM0"></div>
       <div class="cfg-row"><label>波特率</label><input id="cfg-stm32-baudrate" type="number" placeholder="115200"></div>
     </div>
-    <div class="cfg-section"><h3>决策引擎</h3>
+    <div class="cfg-section"><h3>决策引擎 <button class="btn btn-blue btn-sm" onclick="saveSection(`"decision`")">[保存]</button> <span id="cfg-save-decision"></span></h3>
       <div class="cfg-row"><label>RTL自动开门</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl"></div>
       <div class="cfg-row"><label>低电量阈值(%)</label><input id="cfg-decision-low_battery_threshold" type="number" placeholder="20"></div>
       <div class="cfg-row"><label>失联超时(秒)</label><input id="cfg-decision-lost_timeout" type="number" placeholder="30"></div>
@@ -387,6 +394,17 @@ function updateRecentEvents(d) {
   el.innerHTML = ht;
 }
 
+// ====== MAVLink 连接方式切换 ======
+function onMavConnChange() {
+  var v = document.getElementById("cfg-mavlink-connection");
+  var tcp = document.getElementById("mav-tcp-fields");
+  var ser = document.getElementById("mav-serial-fields");
+  if (v && tcp && ser) {
+    tcp.style.display = v.value === "serial" ? "none" : "";
+    ser.style.display = v.value === "serial" ? "" : "none";
+  }
+}
+
 // ====== 配置加载/保存 ======
 function loadConfig() {
   fetch("/api/config")
@@ -398,9 +416,13 @@ function loadConfig() {
       setVal("cfg-mqtt-username", (cfg.mqtt||{}).username || "");
       setVal("cfg-mqtt-password", (cfg.mqtt||{}).password || "");
       setVal("cfg-mqtt-topic_prefix", (cfg.mqtt||{}).topic_prefix || "hangar/");
+      setVal("cfg-mavlink-connection", (cfg.mavlink||{}).connection || "tcp");
       setVal("cfg-mavlink-host", (cfg.mavlink||{}).host || "");
       setVal("cfg-mavlink-port", (cfg.mavlink||{}).port || 5760);
+      setVal("cfg-mavlink-device", (cfg.mavlink||{}).device || "/dev/ttyACM0");
+      setVal("cfg-mavlink-baudrate", (cfg.mavlink||{}).baudrate || 115200);
       setVal("cfg-mavlink-hb_timeout", (cfg.mavlink||{}).heartbeat_timeout || 5);
+      onMavConnChange();
       setVal("cfg-camera-ip", (cfg.camera||{}).ip || "");
       setVal("cfg-camera-port", (cfg.camera||{}).port || 554);
       setVal("cfg-camera-username", (cfg.camera||{}).username || "");
@@ -431,25 +453,39 @@ function gv(id, def, t) {
   return el.value;
 }
 
-function saveConfig() {
-  var cfg = {
-    mqtt: {enabled: gv("cfg-mqtt-enabled","false")==="true", broker: gv("cfg-mqtt-broker",""), port: gv("cfg-mqtt-port",1883,"i"), username: gv("cfg-mqtt-username",""), password: gv("cfg-mqtt-password",""), topic_prefix: gv("cfg-mqtt-topic_prefix","hangar/")},
-    mavlink: {host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i")},
-    camera: {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")},
-    stm32: {port: gv("cfg-stm32-port","/dev/ttyACM0"), baudrate: gv("cfg-stm32-baudrate",115200,"i")},
-    decision: {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")}
+function saveSection(section) {
+  var sections = {
+    mqtt: function() {
+      return {mqtt: {enabled: gv("cfg-mqtt-enabled","false")==="true", broker: gv("cfg-mqtt-broker",""), port: gv("cfg-mqtt-port",1883,"i"), username: gv("cfg-mqtt-username",""), password: gv("cfg-mqtt-password",""), topic_prefix: gv("cfg-mqtt-topic_prefix","hangar/")}};
+    },
+    mavlink: function() {
+      return {mavlink: {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i")}};
+    },
+    camera: function() {
+      return {camera: {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")}};
+    },
+    stm32: function() {
+      return {stm32: {port: gv("cfg-stm32-port","/dev/ttyACM0"), baudrate: gv("cfg-stm32-baudrate",115200,"i")}};
+    },
+    decision: function() {
+      return {decision: {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")}};
+    }
   };
+  var f = sections[section];
+  if (!f) return;
+  var cfg = f();
+  var st = document.getElementById("cfg-save-" + section);
   fetch("/api/config", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(cfg)})
     .then(function(r) { return r.json(); })
     .then(function(res) {
-      var st = document.getElementById("cfg-save-status");
       if (res.ok) {
-        if (st) st.innerHTML = '<span class="badge green">已保存</span>';
-        showToast("配置保存成功，执行 hangar reload 使配置生效", "info");
+        if (st) st.innerHTML = ' <span class="badge green">已保存</span>';
+        showToast("配置已保存，执行 hangar reload 生效", "info");
+        setTimeout(function() { if (st) st.innerHTML = ''; }, 3000);
       } else {
         var det = res.details || [];
-        if (st) st.innerHTML = '<span class="badge red">保存失败</span><br>' + det.map(function(d) { return "- " + d; }).join("<br>");
-        showToast("保存失败: " + (res.error || "未知错误"), "error");
+        if (st) st.innerHTML = ' <span class="badge red">失败</span>';
+        showToast("保存失败: " + (res.error || "未知错误") + (det.length ? " - " + det.join(", ") : ""), "error");
       }
     })
     .catch(function(e) { showToast("错误: " + e.message, "error"); });
@@ -549,8 +585,8 @@ function loadDecisionRules() {
       if (el && d.rules) {
         el.innerHTML = d.rules.map(function(r, i) {
           return '<div style="padding:4px 0;border-bottom:1px solid var(--border)">' +
-            '<b>' + (r.name || "规则"+(i+1)) + '</b>: ' + (r.desc || "") +
-            ' <span class="badge ' + (r.active ? "green" : "yellow") + '">' + (r.active ? "启用" : "禁用") + '</span></div>';
+            '<b>' + (r.event||"") + ': ' + (r.name||"规则"+(i+1)) + '</b> - ' + (r.description || "") +
+            ' <span class="badge ' + (r.enabled ? "green" : "yellow") + '">' + (r.enabled ? "启用" : "禁用") + '</span></div>';
         }).join("");
       }
     })

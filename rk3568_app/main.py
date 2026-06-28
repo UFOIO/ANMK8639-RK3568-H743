@@ -1,4 +1,4 @@
-"""
+﻿"""
 ANMK8639 机库智能控制系统 — 主入口 (Linux Daemon 标准)。
 支持: SIGHUP热重载 / SIGTERM优雅退出 / PID文件 / 命令行参数
 """
@@ -116,14 +116,32 @@ def main():
             new_cfg = ConfigLoader(args.config)
             # 重新设置日志级别
             logging.getLogger().setLevel(getattr(logging, new_cfg.log.get("level", "INFO").upper()))
-            # 更新各模块配置（只更新可变参数）
+            # 更新各模块配置（可变参数热更新，连接参数需重启）
+            nc = new_cfg
             # MAVLink 心跳超时
             if hasattr(mavlink, '_hb_timeout'):
-                mavlink._hb_timeout = new_cfg.mavlink.get("heartbeat_timeout", 5)
-            logger.info("配置已热重载 (日志级别、心跳超时等)")
+                mavlink._hb_timeout = nc.mavlink.get("heartbeat_timeout", 5)
+            # Decision 阈值
+            if hasattr(decision, '_low_battery_threshold'):
+                decision._low_battery_threshold = nc.decision.get("low_battery_threshold", 20)
+            if hasattr(decision, '_lost_timeout'):
+                decision._lost_timeout = nc.decision.get("lost_timeout", 30)
+            if hasattr(decision, '_auto_open_on_rtl'):
+                decision._auto_open_on_rtl = nc.decision.get("auto_open_on_rtl", True)
+            # Camera 抓拍间隔
+            if hasattr(camera, '_snapshot_interval'):
+                camera._snapshot_interval = nc.camera.get("snapshot_interval", 30)
+            # STM32 上报间隔
+            if hasattr(stm32, '_status_interval'):
+                stm32._status_interval = nc.stm32.get("status_interval", 1)
+            # MQTT 状态上报间隔
+            if hasattr(mqtt, '_status_interval'):
+                mqtt._status_interval = nc.mqtt.get("status_interval", 5)
+            logger.info("配置已热重载（阈值/间隔等可变参数已生效，连接参数需 restart）")
             _app_state.log_event("system", "info", "配置热重载完成")
         except Exception:
             logger.exception("热重载失败")
+
 
     signal.signal(signal.SIGTERM, on_terminate)
     signal.signal(signal.SIGINT, on_terminate)
@@ -255,3 +273,4 @@ def _execute_action(data, mqtt, stm32):
 
 if __name__ == "__main__":
     main()
+
