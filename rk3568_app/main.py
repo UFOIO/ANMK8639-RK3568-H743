@@ -1,4 +1,4 @@
-﻿"""
+"""
 ANMK8639 机库智能控制系统 — 主入口 (Linux Daemon 标准)。
 支持: SIGHUP热重载 / SIGTERM优雅退出 / PID文件 / 命令行参数
 """
@@ -66,7 +66,11 @@ def main():
     mavlink = MAVLinkClient(config.mavlink, event_bus, _app_state)
     stm32 = STM32Comm(config.stm32, event_bus, _app_state)
     camera = CameraCapture(config.camera, app_state=_app_state)
-    decision = DecisionEngine(config.decision, event_bus, _app_state)
+    # Merge safety config into decision for dead-reckoning protection
+    dec_cfg = dict(config.decision)
+    if config.get("safety"):
+        dec_cfg.update(config.get("safety"))
+    decision = DecisionEngine(dec_cfg, event_bus, _app_state)
     upgrade = UpgradeManager({}, stm32, event_bus)
     web_ui = WebUI(config.get("web_ui", {}), _app_state, event_bus, stm32, upgrade_mgr=upgrade)
     watchdog = Watchdog(config.watchdog, event_bus)
@@ -243,8 +247,15 @@ def _print_heartbeat(app_state, config):
             telem.append('ARMED')
         telem.append('ALT:' + str(drone.get('alt_rel', '?')) + 'm')
         telem.append('GS:' + str(drone.get('groundspeed', '?')) + 'm/s')
+        telem.append('HDG:' + str(drone.get('heading', '?')))
+        telem.append('CLIMB:' + str(drone.get('climb', '?')) + 'm/s')
         telem.append('BAT:' + str(drone.get('battery', '?')) + '%')
         telem.append('SAT:' + str(drone.get('satellites', '?')))
+        # Extended
+        ekf = drone.get('ekf_health', 0)
+        telem.append('EKF:' + ('OK' if ekf else '-'))
+        telem.append('ROLL:' + str(drone.get('roll', '?')))
+        telem.append('PITCH:' + str(drone.get('pitch', '?')))
         print('TELEM: ' + ' | '.join(telem), flush=True)
 
 

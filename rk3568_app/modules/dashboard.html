@@ -146,7 +146,8 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 <div class="tab active" id="tab-overview">
   <div class="conn-grid" id="conn-cards"></div>
   <div class="grid-2">
-    <div class="panel"><h2>>> 无人机遥测</h2><div class="info-grid" id="drone-grid"></div></div>
+    <div class="panel"><h2>>> 无人机遥测</h2><div class="info-grid" id="drone-grid"></div>
+    <div id="protection-panel" style="display:none;margin-top:12px;padding:10px;border-radius:6px;border:1px solid;font-size:13px"></div></div>
     <div class="panel"><h2>>> 机库状态</h2><div class="info-grid" id="hangar-grid"></div></div>
   </div>
   <div class="panel">
@@ -166,7 +167,7 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 <div class="tab" id="tab-config">
   <div class="panel">
     <h2>>> 系统配置 <button class="btn btn-blue" style="margin-left:auto" onclick="saveConfig()">[保存配置]</button> <span id="cfg-save-status"></span></h2>
-    <div class="cfg-section"><h3>MQTT 地面站 <button class="btn btn-blue btn-sm" onclick="saveSection(`"mqtt`")">[保存]</button> <span id="cfg-save-mqtt"></span></h3>
+    <div class="cfg-section"><h3>MQTT 地面站 <button class="btn btn-blue btn-sm" onclick="saveSection('mqtt')">[保存]</button> <span id="cfg-save-mqtt"></span></h3>
       <div class="cfg-row"><label>启用</label><input type="checkbox" id="cfg-mqtt-enabled"></div>
       <div class="cfg-row"><label>Broker 地址</label><input id="cfg-mqtt-broker" placeholder="mqtt.example.com"></div>
       <div class="cfg-row"><label>端口</label><input id="cfg-mqtt-port" type="number" placeholder="1883"></div>
@@ -174,19 +175,20 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       <div class="cfg-row"><label>密码</label><input id="cfg-mqtt-password" type="password" placeholder="密码"></div>
       <div class="cfg-row"><label>Topic 前缀</label><input id="cfg-mqtt-topic_prefix" placeholder="hangar/"></div>
     </div>
-    <div class="cfg-section"><h3>MAVLink 无人机 <button class="btn btn-blue btn-sm" onclick="saveSection(`"mavlink`")">[保存]</button> <span id="cfg-save-mavlink"></span></h3>
+    <div class="cfg-section"><h3>MAVLink 无人机 <button class="btn btn-blue btn-sm" onclick="saveSection('mavlink')">[保存]</button> <button class="btn btn-outline btn-sm" onclick="scanSerialPorts()" style="margin-left:4px">[刷新设备]</button> <span id="cfg-save-mavlink"></span></h3>
       <div class="cfg-row"><label>连接方式</label><select id="cfg-mavlink-connection" onchange="onMavConnChange()"><option value="tcp">TCP (4G图传)</option><option value="serial">串口 (USB直连)</option></select></div>
       <div id="mav-tcp-fields">
         <div class="cfg-row"><label>4G模块IP</label><input id="cfg-mavlink-host" placeholder="192.168.x.x"></div>
         <div class="cfg-row"><label>端口</label><input id="cfg-mavlink-port" type="number" placeholder="5760"></div>
       </div>
       <div id="mav-serial-fields" style="display:none">
-        <div class="cfg-row"><label>串口设备</label><input id="cfg-mavlink-device" placeholder="/dev/ttyACM0"></div>
+        <div class="cfg-row"><label>串口设备</label><select id="cfg-mavlink-device"><option value="/dev/ttyACM0">/dev/ttyACM0</option><option value="/dev/ttyACM1">/dev/ttyACM1</option><option value="/dev/ttyUSB0">/dev/ttyUSB0</option><option value="/dev/ttyUSB1">/dev/ttyUSB1</option></select></div>
         <div class="cfg-row"><label>波特率</label><input id="cfg-mavlink-baudrate" type="number" placeholder="115200"></div>
       </div>
       <div class="cfg-row"><label>心跳超时(秒)</label><input id="cfg-mavlink-hb_timeout" type="number" placeholder="5"></div>
+      <div class="cfg-row"><label>遥测刷新率(Hz)</label><select id="cfg-mavlink-telem_rate"><option value="1">1 Hz</option><option value="2">2 Hz</option><option value="3">3 Hz</option><option value="4" selected>4 Hz (默认)</option><option value="6">6 Hz</option><option value="8">8 Hz</option><option value="10">10 Hz</option></select></div>
     </div>
-    <div class="cfg-section"><h3>摄像头 RTSP <button class="btn btn-blue btn-sm" onclick="saveSection(`"camera`")">[保存]</button> <span id="cfg-save-camera"></span></h3>
+    <div class="cfg-section"><h3>摄像头 RTSP <button class="btn btn-blue btn-sm" onclick="saveSection('camera')">[保存]</button> <span id="cfg-save-camera"></span></h3>
       <div class="cfg-row"><label>IP 地址</label><input id="cfg-camera-ip" placeholder="10.6.3.57"></div>
       <div class="cfg-row"><label>端口</label><input id="cfg-camera-port" type="number" placeholder="554"></div>
       <div class="cfg-row"><label>用户名</label><input id="cfg-camera-username" placeholder="admin"></div>
@@ -194,7 +196,7 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       <div class="cfg-row"><label>通道</label><input id="cfg-camera-channel" type="number" placeholder="1"></div>
       <div class="cfg-row"><label>RTSP URL (直接填写)</label><input id="cfg-camera-rtsp_url" placeholder="rtsp://... (留空则用上方字段拼接)"></div>
     </div>
-    <div class="cfg-section"><h3>STM32 串口 <button class="btn btn-blue btn-sm" onclick="saveSection(`"stm32`")">[保存]</button> <span id="cfg-save-stm32"></span></h3>
+    <div class="cfg-section"><h3>STM32 串口 <button class="btn btn-blue btn-sm" onclick="saveSection('stm32')">[保存]</button> <button class="btn btn-outline btn-sm" onclick="scanSerialPorts()" style="margin-left:4px">[刷新设备]</button> <span id="cfg-save-stm32"></span></h3>
       <div class="cfg-row"><label>串口设备</label>
         <select id="cfg-stm32-device" onchange="onStmDeviceChange()">
           <option value="/dev/ttyUSB0">/dev/ttyUSB0 (常用)</option>
@@ -207,7 +209,7 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       </div>
       <div class="cfg-row"><label>波特率</label><input id="cfg-stm32-baudrate" type="number" placeholder="115200"></div>
     </div>
-    <div class="cfg-section"><h3>决策引擎 <button class="btn btn-blue btn-sm" onclick="saveSection(`"decision`")">[保存]</button> <span id="cfg-save-decision"></span></h3>
+    <div class="cfg-section"><h3>决策引擎 <button class="btn btn-blue btn-sm" onclick="saveSection('decision')">[保存]</button> <span id="cfg-save-decision"></span></h3>
       <div class="cfg-row"><label>RTL自动开门</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl"></div>
       <div class="cfg-row"><label>低电量阈值(%)</label><input id="cfg-decision-low_battery_threshold" type="number" placeholder="20"></div>
       <div class="cfg-row"><label>失联超时(秒)</label><input id="cfg-decision-lost_timeout" type="number" placeholder="30"></div>
@@ -289,11 +291,11 @@ function switchTab(id, btn) {
   if (btn) btn.classList.add("active");
   // 切换到日志页时刷新
   if (id === "logs") { loadEvents(); loadLogs(); }
-  if (id === "config") loadConfig();
+  if (id === "config") { loadConfig(); scanSerialPorts(); }
 }
 
 // ====== 健康轮询 (每秒) ======
-function pollHealth(){fetch("/api/health").then(function(r){return r.json()}).then(function(d){APP=d;updateConnectionCards(d);updateOverview(d);updateSystemBars(d);updateRecentEvents(d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}).catch(function(e){})};setTimeout(pollHealth,1000)
+function pollHealth(){fetch("/api/health").then(function(r){return r.json()}).then(function(d){APP=d;updateConnectionCards(d);updateOverview(d);updateSystemBars(d);updateRecentEvents(d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}).catch(function(e){})};setTimeout(pollHealth,250)
 
 // ====== 连接状态卡片 ======
 var _MOD_NAMES = {mavlink:"MAVLink 无人机", mqtt:"MQTT 地面站", stm32:"STM32 下位机", camera:"摄像头"};
@@ -322,6 +324,23 @@ function updateOverview(d) {
   var dg = document.getElementById("drone-grid");
   if (dg && d.drone) {
     dg.innerHTML = "";
+    // Data freshness indicator
+    if (d.drone.data_fresh === false && d.drone.connected === false && (d.mavlink && d.mavlink.last_hb_sec != null)) {
+      dg.style.opacity = "0.45";
+      dg.style.position = "relative";
+      var staleBanner = document.getElementById("stale-banner");
+      if (!staleBanner) {
+        staleBanner = document.createElement("div");
+        staleBanner.id = "stale-banner";
+        staleBanner.style.cssText = "color:#f0883e;font-size:12px;padding:4px 8px;background:rgba(240,136,62,0.1);border:1px solid rgba(240,136,62,0.3);border-radius:4px;margin-bottom:8px;text-align:center";
+        staleBanner.textContent = "⚠ 数据已过期，等待飞控重连...";
+        dg.parentNode.insertBefore(staleBanner, dg);
+      }
+    } else {
+      dg.style.opacity = "1";
+      var sb = document.getElementById("stale-banner");
+      if (sb) sb.remove();
+    }
     addInfo(dg, "飞行模式", d.drone.mode || "--");
     addInfo(dg, "GPS卫星", d.drone.satellites != null ? d.drone.satellites : "--");
     addInfo(dg, "GPS定位", d.drone.gps_fix != null ? ["无","2D","3D","RTK"][d.drone.gps_fix]||"--" : "--");
@@ -336,6 +355,37 @@ function updateOverview(d) {
     addInfo(dg, "横滚(°)", d.drone.roll != null ? d.drone.roll : "--");
     addInfo(dg, "俯仰(°)", d.drone.pitch != null ? d.drone.pitch : "--");
     addInfo(dg, "当前航点", d.drone.wp_current != null ? d.drone.wp_current : "--");
+  }
+  // Protection status panel
+  var pp = document.getElementById("protection-panel");
+  if (pp && d.drone && d.drone.protection && d.drone.protection.active) {
+    pp.style.display = "";
+    var ps = d.drone.protection;
+    var phaseText = {"countdown":"倒计时中，即将自动开舱...","door_open":"舱门已自动打开，等待无人机到达","resolved":"无人机已重连，保护结束","timeout_closed":"超时: 舱门已关闭+锁止"}[ps.phase] || "";
+    var color = ps.phase === "timeout_closed" ? "#da3633" : ps.phase === "door_open" ? "#f0883e" : "#58a6ff";
+    var bg = ps.phase === "timeout_closed" ? "rgba(218,54,51,0.1)" : ps.phase === "door_open" ? "rgba(240,136,62,0.1)" : "rgba(88,166,255,0.1)";
+    pp.style.borderColor = color;
+    pp.style.background = bg;
+    pp.style.color = color;
+    var html = "<b>⚠ 断联保护激活</b> | " + phaseText;
+    if (ps.dist != null) html += "<br>距离机库: <b>" + ps.dist + "m</b>";
+    if (ps.eta != null) html += " | ETA: <b>" + ps.eta + "s</b>";
+    if (ps.open_at != null) html += " | 开舱倒计时: <b>" + ps.open_at + "s</b>";
+    if (ps.timeout_remaining != null) html += " | 关舱倒计时: <b>" + Math.floor(ps.timeout_remaining) + "s</b>";
+    if (ps.mode) html += "<br>模式: " + ps.mode;
+    if (ps.batt != null) html += " | 电池: " + ps.batt + "%";
+    if (ps.alt != null) html += " | 高度: " + ps.alt + "m";
+    pp.innerHTML = html;
+  } else if (pp) {
+    pp.style.display = "none";
+  }
+  // Aborted protection
+  if (pp && d.drone && d.drone.protection && d.drone.protection.aborted) {
+    pp.style.display = "";
+    pp.style.borderColor = "#8b949e";
+    pp.style.background = "rgba(139,148,158,0.1)";
+    pp.style.color = "#8b949e";
+    pp.innerHTML = "<b>⚠ 断联保护已取消</b> | " + (d.drone.protection.reason || "");
   }
   var hg = document.getElementById("hangar-grid");
   if (hg && d.hangar) {
@@ -444,6 +494,54 @@ function _setStm32Device(port) {
 }
 
 // ====== 配置加载/保存 ======
+// ====== 扫描可用串口 ======
+function scanSerialPorts() {
+  fetch("/api/serial_ports")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var ports = d.ports || [];
+      if (ports.length === 0) return;
+      // Update MAVLink device dropdown
+      var mavSel = document.getElementById("cfg-mavlink-device");
+      if (mavSel) {
+        var cur = mavSel.value;
+        mavSel.innerHTML = "";
+        ports.forEach(function(p) {
+          var opt = document.createElement("option");
+          opt.value = p.path;
+          opt.textContent = p.label;
+          mavSel.appendChild(opt);
+        });
+        mavSel.value = cur;
+      }
+      // Update STM32 device dropdown
+      var stmSel = document.getElementById("cfg-stm32-device");
+      if (stmSel) {
+        var curStm = stmSel.value;
+        // Keep custom option
+        var hasCustom = false;
+        for (var i = 0; i < stmSel.options.length; i++) {
+          if (stmSel.options[i].value === "__other__") { hasCustom = true; break; }
+        }
+        stmSel.innerHTML = "";
+        ports.forEach(function(p) {
+          var opt = document.createElement("option");
+          opt.value = p.path;
+          opt.textContent = p.path;
+          stmSel.appendChild(opt);
+        });
+        if (hasCustom) {
+          var co = document.createElement("option");
+          co.value = "__other__";
+          co.textContent = "自定义路径...";
+          stmSel.appendChild(co);
+        }
+        stmSel.value = curStm;
+      }
+    })
+    .catch(function(e) {});
+}
+
 function loadConfig() {
   fetch("/api/config")
     .then(function(r) { return r.json(); })
@@ -460,6 +558,7 @@ function loadConfig() {
       setVal("cfg-mavlink-device", (cfg.mavlink||{}).device || "/dev/ttyACM0");
       setVal("cfg-mavlink-baudrate", (cfg.mavlink||{}).baudrate || 115200);
       setVal("cfg-mavlink-hb_timeout", (cfg.mavlink||{}).heartbeat_timeout || 5);
+      setVal("cfg-mavlink-telem_rate", (cfg.mavlink||{}).telem_rate || 4);
       onMavConnChange();
       setVal("cfg-camera-ip", (cfg.camera||{}).ip || "");
       setVal("cfg-camera-port", (cfg.camera||{}).port || 554);
@@ -496,7 +595,7 @@ function saveConfig() {
   var st = document.getElementById("cfg-save-status");
   var all = {};
   all.mqtt = {enabled: gv("cfg-mqtt-enabled","false")==="true", broker: gv("cfg-mqtt-broker",""), port: gv("cfg-mqtt-port",1883,"i"), username: gv("cfg-mqtt-username",""), password: gv("cfg-mqtt-password",""), topic_prefix: gv("cfg-mqtt-topic_prefix","hangar/")};
-  all.mavlink = {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i")};
+  all.mavlink = {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i"), telem_rate: gv("cfg-mavlink-telem_rate",4,"i")};
   all.camera = {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")};
   all.stm32 = {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")};
   all.decision = {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")};
@@ -530,7 +629,7 @@ function saveSection(section) {
       return {mqtt: {enabled: gv("cfg-mqtt-enabled","false")==="true", broker: gv("cfg-mqtt-broker",""), port: gv("cfg-mqtt-port",1883,"i"), username: gv("cfg-mqtt-username",""), password: gv("cfg-mqtt-password",""), topic_prefix: gv("cfg-mqtt-topic_prefix","hangar/")}};
     },
     mavlink: function() {
-      return {mavlink: {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i")}};
+      return {mavlink: {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i"), telem_rate: gv("cfg-mavlink-telem_rate",4,"i")}};
     },
     camera: function() {
       return {camera: {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")}};
@@ -666,7 +765,7 @@ function loadDecisionRules() {
 }
 
 // ====== 启动 ======
-pollHealth();setInterval(pollHealth,2000);
+pollHealth();setInterval(pollHealth,250);
 setInterval(loadEvents, 5000);
 setInterval(loadLogs, 10000);
 loadConfig();

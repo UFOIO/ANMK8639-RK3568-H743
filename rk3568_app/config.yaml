@@ -28,6 +28,7 @@ mavlink:
   port: 5760
   device: "/dev/ttyACM0"
   baudrate: 115200
+  telem_rate: 4            # 遥测刷新率(Hz)，1-10，默认4
   heartbeat_timeout: 5     # 心跳超时(秒)
   system_id: 255           # MAVLink系统ID
   reconnect_interval: 3    # 重连间隔(秒)
@@ -61,6 +62,20 @@ camera:
   snapshot_dir: "./data/snapshots"
   snapshot_timeout: 10     # ffmpeg超时(秒)
   ffmpeg_extra: ""         # ffmpeg额外参数, 如 "-vf fps=1"
+
+# ===== 断联保护 =====
+safety:
+  # --- 机库坐标（必填，否则保护逻辑不触发） ---
+  hangar_lat: 0.0             # 机库纬度
+  hangar_lon: 0.0             # 机库经度
+  # --- 断联保护参数 ---
+  lost_grace_period: 8        # 宽限期(秒)：短时波动不触发
+  default_rtl_speed: 8.0      # 默认RTL速度(m/s)：地速=0时兜底
+  door_eta_margin: 15         # 提前开舱(秒)：ETA前N秒开舱
+  # --- 闭环保护参数 ---
+  door_open_timeout: 300      # 开舱后超时(秒)：无人机未到则自动关舱，默认5分钟
+  min_alt_for_protection: 5.0 # 最低保护高度(m)：低于此值认为在地面，不触发开舱
+  min_battery_for_auto_open: 5  # 最低电量(%)：低于此值不开舱（大概率回不来）
 
 # ===== 决策引擎 =====
 decision:

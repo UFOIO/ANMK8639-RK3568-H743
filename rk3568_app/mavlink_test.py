@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 MAVLink 飞控 USB 直连测试工具
 用法: python3 mavlink_test.py

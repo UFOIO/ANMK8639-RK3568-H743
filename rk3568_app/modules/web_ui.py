@@ -280,6 +280,23 @@ class WebUI:
 
                 elif path == "/api/health":
                     self._json(ui._app_state.health())
+
+                elif path == "/api/stream":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream;charset=utf-8")
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Connection", "keep-alive")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    try:
+                        while ui._running:
+                            data = json.dumps(ui._app_state.health(), ensure_ascii=False)
+                            self.wfile.write(b"data: " + data.encode() + b"\n\n")
+                            self.wfile.flush()
+                            time.sleep(0.1)
+                    except (BrokenPipeError, ConnectionResetError, OSError):
+                        pass
+
                 elif path == "/api/events":
                     count = int(qs.get("count", [50])[0])
                     self._json({"events": ui._app_state.get_events(count)})

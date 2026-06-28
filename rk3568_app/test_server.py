@@ -1,4 +1,4 @@
-﻿import http.server, json, os, yaml, time
+import http.server, json, os, yaml, time
 os.chdir(r"C:\Users\gjt\Desktop\ANMK8639-RK3568-H743\rk3568_app")
 
 DASH = open("modules/dashboard.html", "rb").read()

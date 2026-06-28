@@ -86,6 +86,37 @@ class AppState:
                 "groundspeed": 0.0,
                 "climb_rate": 0.0,
                 "wp_current": 0,
+                "data_fresh": False,  # 断联后变False，收到位置更新后变True
+                # Frozen position for dead-reckoning (preserved on disconnect)
+                "frozen_lat": 0.0, "frozen_lon": 0.0, "frozen_alt": 0.0,
+                "frozen_heading": 0, "frozen_groundspeed": 0.0, "frozen_climb_rate": 0.0,
+                "frozen_flight_mode": "UNKNOWN", "frozen_battery_remaining": 0,
+                "protection_status": {},
+                # IMU
+                "accel_x": 0, "accel_y": 0, "accel_z": 0,
+                "gyro_x": 0, "gyro_y": 0, "gyro_z": 0,
+                # Pressure
+                "press_abs": 0.0, "temperature": 0.0,
+                # Local NED
+                "local_x": 0.0, "local_y": 0.0, "local_z": 0.0,
+                "local_vx": 0.0, "local_vy": 0.0, "local_vz": 0.0,
+                # Navigation
+                "nav_roll": 0.0, "nav_pitch": 0.0, "nav_bearing": 0,
+                "wp_distance": 0.0,
+                # Terrain
+                "terrain_alt": 0.0,
+                # Battery 2
+                "battery2_remaining": 0, "battery2_voltage": 0.0,
+                # AHRS
+                "ahrs_omega_x": 0.0, "ahrs_omega_y": 0.0, "ahrs_omega_z": 0.0,
+                # Extended state
+                "vtol_state": 0, "landed_state": 0,
+                # Wind
+                "wind_x": 0.0, "wind_y": 0.0, "wind_z": 0.0,
+                # EKF
+                "ekf_health": 0, "ekf_pos_horiz": 0.0, "ekf_pos_vert": 0.0,
+                # Vibration
+                "vib_x": 0.0, "vib_y": 0.0, "vib_z": 0.0,
             },
             "hangar": {
                 "stm32_connected": False,
@@ -203,6 +234,27 @@ class AppState:
                 "roll": round(d["drone"]["roll"], 1),
                 "pitch": round(d["drone"]["pitch"], 1),
                 "wp_current": d["drone"]["wp_current"],
+                "data_fresh": d["drone"]["data_fresh"],
+                "protection": d["drone"].get("protection_status", {}),
+                # Extended telemetry
+                "airspeed": round(d["drone"]["airspeed"], 1),
+                "climb": round(d["drone"]["climb_rate"], 1),
+                "yaw": round(d["drone"]["yaw"], 1),
+                "temperature": round(d["drone"]["temperature"], 1),
+                "nav_bearing": d["drone"]["nav_bearing"],
+                "wp_distance": round(d["drone"]["wp_distance"], 1),
+                "terrain_alt": round(d["drone"]["terrain_alt"], 1),
+                "ekf_health": d["drone"]["ekf_health"],
+                "ekf_horiz": round(d["drone"]["ekf_pos_horiz"], 3),
+                "ekf_vert": round(d["drone"]["ekf_pos_vert"], 3),
+                "vtol_state": d["drone"]["vtol_state"],
+                "landed_state": d["drone"]["landed_state"],
+                "wind_x": round(d["drone"]["wind_x"], 1),
+                "wind_y": round(d["drone"]["wind_y"], 1),
+                "vib_x": round(d["drone"]["vib_x"], 2),
+                "vib_y": round(d["drone"]["vib_y"], 2),
+                "vib_z": round(d["drone"]["vib_z"], 2),
+                "battery2": d["drone"]["battery2_remaining"],
             },
             "hangar": {
                 "door": d["hangar"]["door_status"],
