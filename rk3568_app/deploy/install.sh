@@ -20,7 +20,16 @@ mkdir -p "${INSTALL_DIR}" "${CONFIG_DIR}" "${LOG_DIR}" "${DATA_DIR}/snapshots"
 
 echo "[2/6] 复制改用文件..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-rsync -a --exclude="__pycache__" --exclude="*.pyc" --exclude="data/" "${SCRIPT_DIR}/" "${INSTALL_DIR}/"
+# 复制项目文件
+cp -r "${SCRIPT_DIR}/../main.py" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../config.yaml" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../core" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../modules" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../protocol" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../utils" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../deploy" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../requirements.txt" "${INSTALL_DIR}/"
+cp -r "${SCRIPT_DIR}/../tests" "${INSTALL_DIR}/" 2>/dev/null
 
 echo "[3/6] 配置..."
 if [ ! -f "${CONFIG_DIR}/config.yaml" ]; then
