@@ -89,13 +89,12 @@ def main():
     _app_state.log_event("system", "info", "所有模块就绪，进入主循环")
 
     # ===== 信号处理 =====
-    _running = True
+    _running = [True]
 
     def on_terminate(sig, frame):
-        global _running
         logger.info("收到信号 %s, 正在优雅退出...", sig.name if hasattr(sig, 'name') else sig)
         _app_state.log_event("system", "info", "收到退出信号")
-        _running = False
+        _running[0] = False
 
     def on_reload(sig, frame):
         """SIGHUP: 热重载配置"""
@@ -122,7 +121,7 @@ def main():
     tick = 0
     last_status = 0.0
     try:
-        while _running:
+        while _running[0]:
             event_bus.poll(timeout=0.1)
             tick += 1
 
@@ -132,17 +131,27 @@ def main():
                 last_status = now
                 _print_status(_app_state, config)
     except KeyboardInterrupt:
-        pass
+        _running[0] = False
 
-    # ===== 清理 =====
+    # ===== 清理 (最多等5秒) =====
     logger.info("Shutting down...")
-    _app_state.log_event("system", "info", "机库控制系统关闭")
-    for mod in reversed(_modules):
+    import threading as _thr
+    def _do_shutdown():
         try:
-            mod.stop()
+            _app_state.log_event("system", "info", "机库控制系统关闭")
+            for mod in reversed(_modules):
+                try:
+                    mod.stop()
+                except Exception:
+                    logger.exception("Stop error")
+            watchdog.stop()
         except Exception:
-            logger.exception("Stop error")
-    watchdog.stop()
+            pass
+    _t = _thr.Thread(target=_do_shutdown, daemon=True)
+    _t.start()
+    _t.join(timeout=5.0)
+    if _t.is_alive():
+        logger.warning("部分模块未能在5秒内停止，强制退出")
 
     # 删除 PID 文件
     if not args.nodaemon:
