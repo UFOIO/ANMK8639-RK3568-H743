@@ -95,6 +95,7 @@ class MAVLinkClient:
                 self._app_state.set("drone.connected", False)
                 self._event_bus.publish("DRONE_DISCONNECTED", {"reason": "connection_lost"})
                 self._app_state.log_event("mavlink", "warn", "MAVLink连接断开，将自动重连")
+                print("MAVLink DISCONNECTED")
                 time.sleep(3)
             except Exception:
                 logger.exception("MAVLink recv error")
@@ -113,6 +114,7 @@ class MAVLinkClient:
         self._app_state.set("drone.last_heartbeat", self._last_hb)
 
         self._event_bus.publish("DRONE_HEARTBEAT", {"mode": flight_mode, "armed": armed})
+        print("MAVLink HB: mode=" + str(flight_mode) + " armed=" + str(armed))
 
         if not was_connected:
             self._app_state.log_event("mavlink", "info",
@@ -129,6 +131,7 @@ class MAVLinkClient:
         self._app_state.set("drone.alt", msg.relative_alt / 1000.0)
         self._app_state.set("drone.heading", msg.hdg // 100)
         self._app_state.set("drone.last_position_update", time.time())
+        print("MAVLink GPS: lat=" + str(lat)[:8] + " lon=" + str(lon)[:8] + " alt=" + str(round(msg.relative_alt/1000.0,1)) + "m sats=" + str(msg.satellites_visible) + " fix=" + str(msg.fix_type))
         self._event_bus.publish("DRONE_POSITION", {
             "lat": lat, "lon": lon,
             "alt": msg.relative_alt / 1000.0,
@@ -154,6 +157,7 @@ class MAVLinkClient:
             voltage = msg.voltages[0] / 1000.0
         self._app_state.set("drone.battery_remaining", remaining)
         self._app_state.set("drone.battery_voltage", voltage)
+        print("MAVLink BATT: " + str(remaining) + "% " + str(round(voltage/1000.0,1)) + "V")
 
         threshold = 20
         if 0 < remaining < threshold:

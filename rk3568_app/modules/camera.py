@@ -77,6 +77,8 @@ class CameraCapture:
                 if self._app_state:
                     self._app_state.set("system.last_camera_snapshot", time.time())
                 logger.debug("Snapshot saved: %s", path)
+                fsize = os.path.getsize(path)
+                print("Camera SNAP: " + os.path.basename(path) + " " + str(fsize//1024) + "KB")
                 return path
             else:
                 logger.debug("Snapshot empty or failed")
