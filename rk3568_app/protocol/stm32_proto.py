@@ -1,3 +1,4 @@
+from typing import Optional
 """
 STM32 二进制通信协议编解码。
 
@@ -34,7 +35,7 @@ def build_frame(cmd: int, data: bytes = b"") -> bytes:
     return FRAME_HEAD + crc_input + crc_bytes + FRAME_TAIL
 
 
-def parse_frame(data: bytes) -> dict | None:
+def parse_frame(data: bytes) -> Optional[dict]:
     """
     解析上行帧。返回 None 表示帧不完整或无效。
     返回: {"cmd": int, "data": bytes} 或 None

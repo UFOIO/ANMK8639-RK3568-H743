@@ -1,8 +1,9 @@
 #!/bin/bash
 # =============================================
-# ANMK8639 Hangar Control System - å®‰è£…è„šæœ¬
-# ç”¨æ³•: sudo bash install.sh
-# ==============================================
+# ANMK8639 Hangar Control System - ¿ìËÙ°²×°
+# ÓÃ·¨: sudo bash install.sh
+# Ç°Ìá: setup.sh ÒÑÖ´ĞĞ (venv + pip)
+# =============================================
 set -e
 
 APP_NAME="hangar"
@@ -12,52 +13,53 @@ LOG_DIR="/var/log/${APP_NAME}"
 DATA_DIR="/var/lib/${APP_NAME}"
 BIN_LINK="/usr/local/bin/${APP_NAME}"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
+VENV="/home/kickpi/hangar_venv"
 
-echo "=== ANMK8639 Hangar Control System å®‰è£… ==="
+echo "=== ANMK8639 Hangar Control System °²×° ==="
 
-echo "[1/6] åˆ›å»ºç›®å½•..."
-mkdir -p "${INSTALL_DIR}" "${CONFIG_DIR}" "${LOG_DIR}" "${DATA_DIR}/snapshots"
+echo "[1/6] ´´½¨Ä¿Â¼..."
+mkdir -p "${INSTALL_DIR}/data" "${CONFIG_DIR}" "${LOG_DIR}" "${DATA_DIR}/snapshots"
 
-echo "[2/6] å¤åˆ¶æ”¹ç”¨æ–‡ä»¶..."
+echo "[2/6] ¸´ÖÆÏîÄ¿ÎÄ¼ş..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# å¤åˆ¶é¡¹ç›®æ–‡ä»¶
-cp -r "${SCRIPT_DIR}/../main.py" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../config.yaml" "${INSTALL_DIR}/"
+cp "${SCRIPT_DIR}/../main.py" "${INSTALL_DIR}/"
+cp "${SCRIPT_DIR}/../config.yaml" "${INSTALL_DIR}/"
 cp -r "${SCRIPT_DIR}/../core" "${INSTALL_DIR}/"
 cp -r "${SCRIPT_DIR}/../modules" "${INSTALL_DIR}/"
 cp -r "${SCRIPT_DIR}/../protocol" "${INSTALL_DIR}/"
 cp -r "${SCRIPT_DIR}/../utils" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../deploy" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../requirements.txt" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../tests" "${INSTALL_DIR}/" 2>/dev/null
+cp -r "${SCRIPT_DIR}/../deploy" "${INSTALL_DIR}/" 2>/dev/null || true
 
-echo "[3/6] é…ç½®..."
+echo "[3/6] ÅäÖÃ..."
 if [ ! -f "${CONFIG_DIR}/config.yaml" ]; then
     cp "${INSTALL_DIR}/config.yaml" "${CONFIG_DIR}/config.yaml"
-    echo "  -> åˆ›å»ºé»˜è®¤é…ç½®"
+    echo "  -> ´´½¨Ä¬ÈÏÅäÖÃ"
 else
-    echo "  -> é…ç½®å·²å­˜åœ¨ï¼Œè·³è¿‡"
+    echo "  -> ÅäÖÃÒÑ´æÔÚ£¬Ìø¹ı"
 fi
+rm -f "${INSTALL_DIR}/config.yaml"
 ln -sf "${CONFIG_DIR}/config.yaml" "${INSTALL_DIR}/config.yaml"
 
-echo "[4/6] ç›®å½•é“¾æ¥..."
-ln -sfn "${LOG_DIR}" "${INSTALL_DIR}/data/logs"
-ln -sfn "${DATA_DIR}" "${INSTALL_DIR}/data/snapshots"
+echo "[4/6] Ä¿Â¼Á´½Ó..."
+rm -rf "${INSTALL_DIR}/data/logs" 2>/dev/null || true
+rm -rf "${INSTALL_DIR}/data/snapshots" 2>/dev/null || true
+ln -sf "${LOG_DIR}" "${INSTALL_DIR}/data/logs"
+ln -sf "${DATA_DIR}" "${INSTALL_DIR}/data/snapshots"
 
-echo "[5/6] å®‰è£… systemd æœåŠ¡..."
-cp "${INSTALL_DIR}/deploy/hangar.service" "${SERVICE_FILE}"
-# ç¡®ä¿ä½¿ç”¨ venv Python
-sed -i "s|/usr/bin/python3|/home/kickpi/hangar_venv/bin/python3|g" "${SERVICE_FILE}"
+echo "[5/6] °²×° systemd ·şÎñ..."
+cp "${SCRIPT_DIR}/hangar.service" "${SERVICE_FILE}"
+sed -i "s|/usr/bin/python3|${VENV}/bin/python3|g" "${SERVICE_FILE}"
+sed -i "s|/home/kickpi/hangar_venv/bin/python3|${VENV}/bin/python3|g" "${SERVICE_FILE}"
 systemctl daemon-reload
-systemctl enable "${APP_NAME}"
+systemctl enable "${APP_NAME}" 2>/dev/null || true
 
-echo "[6/6] åˆ›å»º CLI å‘½ä»¤..."
-cp "${INSTALL_DIR}/deploy/hangar-cli.sh" "${BIN_LINK}"
+echo "[6/6] ´´½¨ CLI ÃüÁî..."
+cp "${SCRIPT_DIR}/hangar-cli.sh" "${BIN_LINK}"
 chmod +x "${BIN_LINK}"
 
 echo ""
 echo "====================================="
-echo "  âœ… å®‰è£…å®Œæˆ"
-echo "  å‘½ä»¤: hangar start|stop|restart|reload|status|logs|check|config"
+echo "  ? °²×°Íê³É"
+echo "  ÃüÁî: hangar start|stop|restart|reload|status|logs|check|config"
 echo "  Web:  http://$(hostname -I | awk '{print $1}'):8080"
 echo "====================================="

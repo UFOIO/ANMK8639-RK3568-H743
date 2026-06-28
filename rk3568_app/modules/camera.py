@@ -1,3 +1,4 @@
+from typing import Optional
 """
 摄像头模块：RTSP 拉流 + 定时截图。方案A: subprocess + ffmpeg（最简单）
 """
@@ -59,7 +60,7 @@ class CameraCapture:
         if self._app_state:
             self._app_state.log_event("camera", "info", "摄像头模块已停止")
 
-    def capture_snapshot(self) -> str | None:
+    def capture_snapshot(self) -> Optional[str]:
         ts = int(time.time())
         path = os.path.join(self._snapshot_dir, f"snap_{ts}.jpg")
         cmd = [

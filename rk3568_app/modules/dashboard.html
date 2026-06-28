@@ -1,341 +1,568 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ANMK8639 机库控制台</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANMK8639 机库控制系统</title>
 <style>
-:root{--bg:#0d1117;--panel:#161b22;--border:#21262d;--text:#c9d1d9;--dim:#8b949e;--green:#3fb950;--yellow:#d2991d;--red:#da3633;--blue:#58a6ff;--accent:#1f6feb}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font:13px/1.5 Segoe UI,Microsoft YaHei,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-#topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+:root{--bg:#0a0e14;--panel:#131820;--border:#1e2836;--blue:#39bae6;--green:#7fd962;--yellow:#ffb454;--red:#f26d78;--orange:#ff8f40;--dim:#5c6773;--text:#bfc7d0;--white:#e6eaf0;--radius:6px;--font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5;min-height:100vh}
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--panel);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100}
 #topbar .title{display:flex;align-items:center;gap:12px}
-#topbar h1{font-size:16px;font-weight:600}
-#topbar h1 span{color:var(--blue)}
-.hb-dot{width:14px;height:14px;border-radius:50%;position:relative}
-.hb-dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;animation:pulse 1.2s infinite}
-.hb-dot.ok{background:var(--green)}.hb-dot.ok::after{border:2px solid var(--green)}
-.hb-dot.warn{background:var(--yellow)}.hb-dot.warn::after{border:2px solid var(--yellow)}
-.hb-dot.bad{background:var(--red)}.hb-dot.bad::after{border:2px solid var(--red)}
-@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(2.2);opacity:0}}
-#uptime-display{font-size:12px;color:var(--dim);font-family:monospace}
-nav{display:flex;padding:0 20px;background:var(--panel);border-bottom:1px solid var(--border)}
-nav button{padding:10px 20px;border:none;background:none;color:var(--dim);cursor:pointer;font-size:13px;border-bottom:2px solid transparent}
-nav button:hover{color:var(--text)}
-nav button.active{color:var(--blue);border-bottom-color:var(--blue)}
-main{padding:16px;max-width:1500px;margin:0 auto}
-.tab{display:none}.tab.active{display:block}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px}
-.card h3{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.grid3{grid-template-columns:repeat(2,1fr)}}
-.conn-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px}
-.conn-card .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.conn-card .dot.healthy{background:var(--green)}.conn-card .dot.stale{background:var(--yellow)}.conn-card .dot.dead{background:var(--red)}
+#topbar .title h1{font-size:16px;font-weight:700;color:var(--white);letter-spacing:0.5px}
+#topbar .title .ver{font-size:11px;color:var(--dim);background:var(--border);padding:2px 8px;border-radius:10px}
+.hb-dot{width:10px;height:10px;border-radius:50%;display:inline-block;animation:pulse 1.5s ease-in-out infinite}
+.hb-dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.hb-dot.warn{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
+.hb-dot.bad{background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse 0.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+#uptime-display{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+nav{display:flex;gap:2px;background:var(--bg);border-radius:var(--radius);padding:2px}
+nav button{padding:8px 18px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:13px;border-radius:var(--radius);transition:all 0.2s;font-family:var(--font)}
+nav button:hover{color:var(--text);background:var(--border)}
+nav button.active{background:var(--blue);color:#000;font-weight:600}
+main{max-width:1300px;margin:0 auto;padding:16px 20px}
+.tab{display:none}
+.tab.active{display:block}
+
+/* 连接状态卡片 */
+.conn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+.conn-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;transition:border-color 0.3s}
+.conn-card:hover{border-color:var(--dim)}
+.conn-card .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.conn-card .dot.healthy{background:var(--green);box-shadow:0 0 6px var(--green)}
+.conn-card .dot.stale{background:var(--yellow);box-shadow:0 0 6px var(--yellow)}
+.conn-card .dot.dead{background:var(--red);box-shadow:0 0 6px var(--red)}
 .conn-card .cinfo{flex:1}
-.conn-card .cname{font-size:11px;color:var(--dim)}.conn-card .cstate{font-size:13px;font-weight:600}
-.conn-card .cage{font-size:10px;color:var(--dim);font-family:monospace}
-.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.info-item{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px}
-.info-item .il{font-size:10px;color:var(--dim)}.info-item .iv{font-size:15px;font-weight:600;font-family:monospace}
-.badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
-.badge.green{background:#1a3d1a;color:var(--green)}.badge.yellow{background:#3d2e00;color:var(--yellow)}
-.badge.red{background:#3d1a1a;color:var(--red)}.badge.blue{background:#1a3a5c;color:var(--blue)}
-.btn{background:var(--accent);color:white;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:12px}
-.btn:hover{opacity:0.85}.btn.danger{background:var(--red)}.btn.green{background:var(--green);color:#000}
-.btn.small{padding:4px 10px;font-size:11px}
-.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.sec-header h3{font-size:13px;font-weight:600}
-.cfg-section{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
-.cfg-section h4{font-size:12px;color:var(--blue);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.cfg-row{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap;align-items:center}
-.cfg-row label{font-size:11px;color:var(--dim);min-width:65px}
-.cfg-row input,.cfg-row select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-size:11px;font-family:monospace}
-.cfg-row input.t{min-width:160px}.cfg-row input.n{width:65px}
-.gauge{display:flex;align-items:center;gap:8px;padding:4px 0}
-.gauge .bar{flex:1;height:16px;background:var(--border);border-radius:8px;overflow:hidden}
-.gauge .bar .fill{height:100%;border-radius:8px;transition:width .5s}
-.gauge .gv{font-family:monospace;font-size:12px;min-width:50px;text-align:right}
-.data-table{width:100%;border-collapse:collapse;font-size:11px}
-.data-table th,.data-table td{padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)}
-.data-table th{color:var(--dim);font-weight:600;font-size:10px}
-.prog-bar{height:6px;background:var(--border);border-radius:3px;margin:6px 0;overflow:hidden}
-.prog-bar .fill{height:100%;background:var(--blue);border-radius:3px;transition:width .3s}
-.event-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;font-family:monospace}
-.event-row .elv{padding:0 4px;border-radius:2px;font-size:9px;font-weight:600;min-width:36px;text-align:center}
-.event-row .elv.info{background:#1a3a5c;color:var(--blue)}.event-row .elv.warn{background:#3d2e00;color:var(--yellow)}.event-row .elv.error{background:#3d1a1a;color:var(--red)}
-.event-row .ets{color:var(--dim);white-space:nowrap}.event-row .esrc{color:var(--blue);min-width:55px}.event-row .emsg{flex:1}
-pre.log-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;font-family:monospace;white-space:pre-wrap;max-height:400px;overflow-y:auto}
-#toast-container{position:fixed;top:70px;right:20px;z-index:200;display:flex;flex-direction:column;gap:6px}
-.toast{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;max-width:380px;box-shadow:0 4px 12px rgba(0,0,0,0.4);animation:slideIn .3s;display:flex;align-items:flex-start;gap:8px}
-.toast.warn{border-left:3px solid var(--yellow)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--blue)}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-.toast .tmsg{flex:1}.toast .tclose{color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
-.section-title{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px 0;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.conn-card .cname{font-weight:600;color:var(--white);font-size:14px}
+.conn-card .cstate{font-size:12px}
+.conn-card .cstate.healthy{color:var(--green)}
+.conn-card .cstate.stale{color:var(--yellow)}
+.conn-card .cstate.dead{color:var(--red)}
+.conn-card .cage{font-size:11px;color:var(--dim);margin-top:2px}
+
+/* 面板 */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.panel h2{font-size:14px;font-weight:600;color:var(--white);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.panel h2 .icon{font-size:16px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.info-item{background:var(--bg);border-radius:var(--radius);padding:10px 12px}
+.info-item .il{font-size:11px;color:var(--dim);margin-bottom:4px}
+.info-item .iv{font-size:16px;font-weight:600;color:var(--white);font-variant-numeric:tabular-nums}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:800px){.grid-2{grid-template-columns:1fr}}
+
+/* 系统资源条 */
+.bar-row{margin-bottom:10px}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;color:var(--dim)}
+.bar-label span:last-child{color:var(--text);font-weight:500}
+.bar-track{background:var(--bg);border-radius:10px;height:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:10px;transition:width 0.5s ease}
+.bar-fill.cpu{background:var(--blue)}
+.bar-fill.ram{background:var(--green)}
+.bar-fill.disk{background:var(--orange)}
+#sys-detail{font-size:11px;color:var(--dim);margin-top:10px;text-align:center}
+
+/* 事件日志 */
+.event-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);align-items:baseline;font-size:12px}
+.event-row .elv{padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;flex-shrink:0;min-width:32px;text-align:center}
+.event-row .elv.info{background:var(--blue);color:#000}
+.event-row .elv.warn{background:var(--yellow);color:#000}
+.event-row .elv.error{background:var(--red);color:#fff}
+.event-row .ets{color:var(--dim);flex-shrink:0;min-width:60px;font-variant-numeric:tabular-nums}
+.event-row .esrc{color:var(--blue);flex-shrink:0;min-width:60px}
+.event-row .emsg{color:var(--text);word-break:break-all}
+.event-filters{display:flex;gap:6px;margin-bottom:10px}
+.event-filters button{padding:4px 12px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;border-radius:var(--radius);font-size:11px;font-family:var(--font)}
+.event-filters button:hover{color:var(--text);border-color:var(--dim)}
+.event-filters button.on{background:var(--blue);color:#000;border-color:var(--blue)}
+
+/* 配置表单 */
+.cfg-section{margin-bottom:16px}
+.cfg-section h3{font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px;padding-left:8px;border-left:3px solid var(--blue)}
+.cfg-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.cfg-row label{min-width:150px;text-align:right;color:var(--dim);font-size:12px}
+.cfg-row input,.cfg-row select{flex:1;max-width:300px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);font-size:12px;font-family:var(--font)}
+.cfg-row input:focus,.cfg-row select:focus{outline:none;border-color:var(--blue)}
+.cfg-row input[type=checkbox]{flex:none;width:16px;height:16px;accent-color:var(--blue)}
+
+/* 按钮 */
+.btn{padding:8px 16px;border:none;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font);transition:all 0.15s}
+.btn-blue{background:var(--blue);color:#000}
+.btn-blue:hover{opacity:0.85}
+.btn-green{background:var(--green);color:#000}
+.btn-green:hover{opacity:0.85}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{opacity:0.85}
+.btn-outline{border:1px solid var(--border);background:transparent;color:var(--text)}
+.btn-outline:hover{background:var(--border)}
+.cmd-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+#cmd-result{margin-top:8px;font-size:12px}
+
+/* Toast */
+#toast-container{position:fixed;top:60px;right:20px;z-index:200;display:flex;flex-direction:column;gap:6px}
+.toast{padding:10px 16px;border-radius:var(--radius);font-size:12px;font-weight:500;animation:slideIn 0.3s ease;display:flex;align-items:center;gap:10px;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+.toast.info{background:#1a3a4a;border:1px solid var(--blue);color:var(--blue)}
+.toast.warn{background:#3a2a1a;border:1px solid var(--yellow);color:var(--yellow)}
+.toast.error{background:#3a1a1a;border:1px solid var(--red);color:var(--red)}
+.toast .tclose{cursor:pointer;font-size:16px;opacity:0.6;margin-left:auto}
+.toast .tclose:hover{opacity:1}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* 日志 */
+#logs-content{background:var(--bg);color:var(--text);padding:12px;border-radius:var(--radius);font-family:"Cascadia Code",Consolas,monospace;font-size:11px;white-space:pre-wrap;max-height:500px;overflow-y:auto;line-height:1.6}
+
+/* 登录 */
+.login-box{max-width:380px;margin:80px auto;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:30px;text-align:center}
+.login-box h1{color:var(--white);margin-bottom:20px}
+.login-box input{width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);margin-bottom:12px;font-size:14px;text-align:center}
+.login-box input:focus{outline:none;border-color:var(--blue)}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600}
+.badge.green{background:var(--green);color:#000}
+.badge.red{background:var(--red);color:#fff}
+.badge.yellow{background:var(--yellow);color:#000}
 </style>
 </head>
 <body>
-
 <div id="topbar">
-<div class="title"><div class="hb-dot ok" id="hb-dot"></div><h1>ANMK8639 <span>Hangar Control</span></h1></div>
-<div id="uptime-display">--</div>
+  <div class="title">
+    <h1>ANMK8639 机库控制</h1>
+    <span class="ver">v1.0</span>
+    <span id="hb-dot" class="hb-dot bad"></span>
+    <span id="uptime-display">运行 --</span>
+  </div>
+  <nav>
+    <button class="active" onclick="switchTab('overview',this)">[总览]</button>
+    <button onclick="switchTab('config',this)">[配置]</button>
+    <button onclick="switchTab('control',this)">[控制]</button>
+    <button onclick="switchTab('logs',this)">[日志]</button>
+  </nav>
 </div>
-
-<nav>
-<button class="active" onclick="switchTab('overview',this)">OVERVIEW</button>
-<button onclick="switchTab('config',this)">CONFIG</button>
-<button onclick="switchTab('control',this)">CONTROL</button>
-<button onclick="switchTab('logs',this)">LOGS</button>
-</nav>
 
 <main>
-<!-- ===== OVERVIEW ===== -->
+<!-- ====== 总览 ====== -->
 <div class="tab active" id="tab-overview">
-
-<div class="grid4" id="conn-cards">Loading...</div>
-
-<div class="section-title">Drone Telemetry</div>
-<div class="info-grid" id="drone-grid">--</div>
-
-<div class="section-title">Hangar Status</div>
-<div class="info-grid" id="hangar-grid">--</div>
-
-<div class="grid2" style="margin-top:12px">
-<div class="card"><h3>System Resources</h3>
-<div class="gauge"><div class="bar"><div class="fill" id="sys-cpu" style="width:0;background:var(--green)"></div></div><div class="gv" id="sys-cpu-v">--</div></div>
-<div class="gauge"><div class="bar"><div class="fill" id="sys-ram" style="width:0;background:var(--blue)"></div></div><div class="gv" id="sys-ram-v">--</div></div>
-<div class="gauge"><div class="bar"><div class="fill" id="sys-disk" style="width:0;background:var(--yellow)"></div></div><div class="gv" id="sys-disk-v">--</div></div>
-<div style="font-size:10px;color:var(--dim);margin-top:4px" id="sys-detail">--</div>
-</div>
-<div class="card"><h3>Recent Events</h3><div id="overview-events" style="max-height:200px;overflow-y:auto">--</div></div>
-</div>
-
+  <div class="conn-grid" id="conn-cards"></div>
+  <div class="grid-2">
+    <div class="panel"><h2>>> 无人机遥测</h2><div class="info-grid" id="drone-grid"></div></div>
+    <div class="panel"><h2>>> 机库状态</h2><div class="info-grid" id="hangar-grid"></div></div>
+  </div>
+  <div class="panel">
+    <h2>>> 系统资源</h2>
+    <div class="bar-row"><div class="bar-label"><span>CPU</span><span id="sys-cpu-v">--</span></div><div class="bar-track"><div class="bar-fill cpu" id="sys-cpu" style="width:0%"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>内存</span><span id="sys-ram-v">--</span></div><div class="bar-track"><div class="bar-fill ram" id="sys-ram" style="width:0%"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>磁盘</span><span id="sys-disk-v">--</span></div><div class="bar-track"><div class="bar-fill disk" id="sys-disk" style="width:0%"></div></div></div>
+    <div id="sys-detail">--</div>
+  </div>
+  <div class="panel">
+    <h2>>> 最近事件</h2>
+    <div id="overview-events"><span style="color:var(--dim)">暂无事件</span></div>
+  </div>
 </div>
 
-<!-- ===== CONFIG ===== -->
+<!-- ====== 配置 ====== -->
 <div class="tab" id="tab-config">
-<div class="sec-header"><h3>System Configuration</h3><button class="btn green" onclick="saveConfig()">Save Config</button></div>
-
-<div class="cfg-section"><h4>MQTT</h4>
-<div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-mqtt-enabled" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Broker</label><input type="text" class="t" id="cfg-mqtt-broker" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mqtt-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Client ID</label><input type="text" class="t" id="cfg-mqtt-client_id" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Username</label><input type="text" class="t" id="cfg-mqtt-username" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Password</label><input type="password" class="t" id="cfg-mqtt-password" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Topic</label><input type="text" class="t" id="cfg-mqtt-topic_prefix" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Keepalive</label><input type="number" class="n" id="cfg-mqtt-keepalive" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>QoS</label><select id="cfg-mqtt-qos" onchange="cfgChanged()"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select></div>
+  <div class="panel">
+    <h2>>> 系统配置 <button class="btn btn-blue" style="margin-left:auto" onclick="saveConfig()">[保存配置]</button> <span id="cfg-save-status"></span></h2>
+    <div class="cfg-section"><h3>MQTT 地面站</h3>
+      <div class="cfg-row"><label>启用</label><input type="checkbox" id="cfg-mqtt-enabled"></div>
+      <div class="cfg-row"><label>Broker 地址</label><input id="cfg-mqtt-broker" placeholder="mqtt.example.com"></div>
+      <div class="cfg-row"><label>端口</label><input id="cfg-mqtt-port" type="number" placeholder="1883"></div>
+      <div class="cfg-row"><label>用户名</label><input id="cfg-mqtt-username" placeholder="admin"></div>
+      <div class="cfg-row"><label>密码</label><input id="cfg-mqtt-password" type="password" placeholder="密码"></div>
+      <div class="cfg-row"><label>Topic 前缀</label><input id="cfg-mqtt-topic_prefix" placeholder="hangar/"></div>
+    </div>
+    <div class="cfg-section"><h3>MAVLink 无人机</h3>
+      <div class="cfg-row"><label>4G模块IP</label><input id="cfg-mavlink-host" placeholder="192.168.x.x"></div>
+      <div class="cfg-row"><label>端口</label><input id="cfg-mavlink-port" type="number" placeholder="5760"></div>
+      <div class="cfg-row"><label>心跳超时(秒)</label><input id="cfg-mavlink-hb_timeout" type="number" placeholder="5"></div>
+    </div>
+    <div class="cfg-section"><h3>摄像头 RTSP</h3>
+      <div class="cfg-row"><label>IP 地址</label><input id="cfg-camera-ip" placeholder="10.6.3.57"></div>
+      <div class="cfg-row"><label>端口</label><input id="cfg-camera-port" type="number" placeholder="554"></div>
+      <div class="cfg-row"><label>用户名</label><input id="cfg-camera-username" placeholder="admin"></div>
+      <div class="cfg-row"><label>密码</label><input id="cfg-camera-password" type="password" placeholder="密码"></div>
+      <div class="cfg-row"><label>通道</label><input id="cfg-camera-channel" type="number" placeholder="1"></div>
+      <div class="cfg-row"><label>RTSP URL (直接填写)</label><input id="cfg-camera-rtsp_url" placeholder="rtsp://... (留空则用上方字段拼接)"></div>
+    </div>
+    <div class="cfg-section"><h3>STM32 串口</h3>
+      <div class="cfg-row"><label>串口设备</label><input id="cfg-stm32-port" placeholder="/dev/ttyACM0"></div>
+      <div class="cfg-row"><label>波特率</label><input id="cfg-stm32-baudrate" type="number" placeholder="115200"></div>
+    </div>
+    <div class="cfg-section"><h3>决策引擎</h3>
+      <div class="cfg-row"><label>RTL自动开门</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl"></div>
+      <div class="cfg-row"><label>低电量阈值(%)</label><input id="cfg-decision-low_battery_threshold" type="number" placeholder="20"></div>
+      <div class="cfg-row"><label>失联超时(秒)</label><input id="cfg-decision-lost_timeout" type="number" placeholder="30"></div>
+    </div>
+  </div>
 </div>
 
-<div class="cfg-section"><h4>MAVLink</h4>
-<div class="cfg-row"><label>Host</label><input type="text" class="t" id="cfg-mavlink-host" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mavlink-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>HB Timeout</label><input type="number" class="n" id="cfg-mavlink-heartbeat_timeout" onchange="cfgChanged()"></div>
-</div>
-
-<div class="cfg-section"><h4>Camera</h4>
-<div class="cfg-row"><label>IP</label><input type="text" class="t" id="cfg-camera-ip" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-camera-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>User</label><input type="text" class="t" id="cfg-camera-username" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Pass</label><input type="password" class="t" id="cfg-camera-password" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Channel</label><input type="number" class="n" id="cfg-camera-channel" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>RTSP URL</label><input type="text" class="t" id="cfg-camera-rtsp_url" onchange="cfgChanged()" style="min-width:300px" placeholder="Override (leave blank for auto)"></div>
-</div>
-
-<div class="cfg-section"><h4>STM32</h4>
-<div class="cfg-row"><label>Device</label><input type="text" class="t" id="cfg-stm32-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Baud</label><input type="number" class="n" id="cfg-stm32-baudrate" onchange="cfgChanged()"></div>
-</div>
-
-<div class="cfg-section"><h4>Decision</h4>
-<div class="cfg-row"><label>RTL Open</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Batt Low%</label><input type="number" class="n" id="cfg-decision-low_battery_threshold" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Lost Timeout</label><input type="number" class="n" id="cfg-decision-lost_timeout" onchange="cfgChanged()"></div>
-</div>
-
-<div id="cfg-save-status" style="margin-top:8px"></div>
-</div>
-
-<!-- ===== CONTROL ===== -->
+<!-- ====== 控制 ====== -->
 <div class="tab" id="tab-control">
-
-<div class="section-title">STM32 Commands</div>
-<div class="grid4">
-<div class="card" style="text-align:center"><h3>Door</h3>
-<button class="btn green" onclick="sendCmd('OPEN_DOOR')">Open</button>
-<button class="btn danger" onclick="sendCmd('CLOSE_DOOR')">Close</button>
-</div>
-<div class="card" style="text-align:center"><h3>Lock</h3>
-<button class="btn" onclick="sendCmd('LOCK')">Lock</button>
-<button class="btn green" onclick="sendCmd('UNLOCK')">Unlock</button>
-</div>
-<div class="card" style="text-align:center"><h3>Restart</h3>
-<button class="btn danger small" onclick="restartService()">Restart Svc</button>
-</div>
-<div class="card" style="text-align:center"><h3>Camera</h3>
-<button class="btn green small" onclick="captureSnapshot()">Capture</button>
-</div>
-</div>
-<div id="cmd-result" style="margin-top:6px;font-size:11px"></div>
-
-<div class="section-title">Firmware Upgrade (IAP)</div>
-<div class="card">
-<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-<span style="font-weight:600" id="upg-state-label">Idle</span>
-<div class="prog-bar" style="flex:1;min-width:120px"><div class="fill" id="upg-progress" style="width:0"></div></div>
-<input type="text" class="t" id="upg-path" placeholder="/path/to/firmware.bin" style="min-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-size:11px">
-<button class="btn green small" onclick="startUpgrade()">Start</button>
-<button class="btn danger small" onclick="cancelUpgrade()">Cancel</button>
-</div>
-<div id="upg-info" style="font-size:10px;color:var(--dim);margin-top:4px"></div>
+  <div class="panel"><h2>>> 舱门控制</h2>
+    <div class="cmd-grid">
+      <button class="btn btn-green" onclick="sendCmd('OPEN_DOOR')">开门</button>
+      <button class="btn btn-red" onclick="sendCmd('CLOSE_DOOR')">关门</button>
+      <button class="btn btn-outline" onclick="sendCmd('LOCK')">上锁</button>
+      <button class="btn btn-outline" onclick="sendCmd('UNLOCK')">解锁</button>
+    </div>
+    <div id="cmd-result"></div>
+  </div>
+  <div class="panel"><h2>>> 系统操作</h2>
+    <div class="cmd-grid">
+      <button class="btn btn-blue" onclick="captureSnapshot()">[手动截图]</button>
+      <button class="btn btn-red" onclick="restartService()">[重启服务]</button>
+    </div>
+  </div>
+  <div class="panel"><h2>>> 决策规则</h2><div id="decision-rules" style="color:var(--dim)">从配置加载...</div></div>
 </div>
 
-<div class="section-title">Decision Rules</div>
-<div id="decision-rules" class="grid2">Loading...</div>
-
-</div>
-
-<!-- ===== LOGS ===== -->
+<!-- ====== 日志 ====== -->
 <div class="tab" id="tab-logs">
-<div class="grid2">
-<div class="card"><h3>Event Log</h3>
-<div style="margin-bottom:6px">
-<button class="btn small" onclick="filterEvents('all')" id="ef-all" style="background:var(--blue)">All</button>
-<button class="btn small" onclick="filterEvents('info')" id="ef-info">Info</button>
-<button class="btn small" onclick="filterEvents('warn')" id="ef-warn">Warn</button>
-<button class="btn small" onclick="filterEvents('error')" id="ef-error">Error</button>
+  <div class="panel">
+    <h2>>> 事件日志</h2>
+    <div class="event-filters">
+      <button id="ef-all" class="on" onclick="filterEvents('all')">全部</button>
+      <button id="ef-info" onclick="filterEvents('info')">信息</button>
+      <button id="ef-warn" onclick="filterEvents('warn')">警告</button>
+      <button id="ef-error" onclick="filterEvents('error')">错误</button>
+    </div>
+    <div id="events-list"><span style="color:var(--dim)">加载中...</span></div>
+  </div>
+  <div class="panel">
+    <h2>>> 系统日志</h2>
+    <div id="logs-content">加载中...</div>
+  </div>
 </div>
-<div id="events-list" style="max-height:450px;overflow-y:auto">--</div>
-</div>
-<div class="card"><h3>App Logs</h3><button class="btn small" onclick="loadLogs()" style="margin-bottom:6px">Refresh</button>
-<pre class="log-box" id="logs-content">--</pre></div>
-</div>
-</div>
-
 </main>
 
 <div id="toast-container"></div>
 
 <script>
-function switchTab(n,b){document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});var el=document.getElementById('tab-'+n);if(el)el.classList.add('active');document.querySelectorAll('nav button').forEach(function(x){x.classList.remove('active')});if(b)b.classList.add('active');if(n==='overview'){loadOverview()}if(n==='config'){loadConfigForm()}if(n==='control'){loadUpgradeStatus();loadDecisionRules()}if(n==='logs'){loadEvents();loadLogs()}}
+// ====== 全局状态 ======
+var APP = {uptime:0, overall:"unknown"};
 
-// ===== TOAST =====
-var _tid=0;
-function showToast(m,l){l=l||'info';var c=document.getElementById('toast-container');var d=document.createElement('div');d.className='toast '+l;d.id='t-'+_tid;var s=document.createElement('span');s.className='tmsg';s.textContent=m;var x=document.createElement('span');x.className='tclose';x.textContent='\u00d7';x.style.cursor='pointer';x.onclick=function(){d.remove()};d.appendChild(s);d.appendChild(x);c.appendChild(d);var id=_tid++;setTimeout(function(){var e=document.getElementById('t-'+id);if(e)e.remove()},4000)}
-
-// ===== POLLING =====
-var _prevH='';
-function pollHealth(){fetch('/api/health').then(function(r){return r.json()}).then(function(h){
-var dot=document.getElementById('hb-dot');dot.className='hb-dot '+(h.overall==='healthy'?'ok':h.overall==='degraded'?'warn':'bad');
-var u=Math.floor(h.uptime||0);document.getElementById('uptime-display').textContent='RUN '+Math.floor(u/60)+'m '+Math.floor(u%60)+'s';
-
-// Connection cards
-var cons=[{k:'mavlink',n:'MAVLink',icon:'SAT'},{k:'mqtt',n:'MQTT',icon:'NET'},{k:'stm32',n:'STM32',icon:'MCU'},{k:'camera',n:'Camera',icon:'CAM'}];
-var ht='';
-for(var i=0;i<cons.length;i++){
-var c=cons[i];var d=h[c.k]||{};var st=d.status||'dead';
-var labels={healthy:'OK',stale:'STALE',dead:'DOWN'};
-var sec=d.last_hb_sec||d.last_msg_sec||d.last_status_sec||d.last_snapshot_sec;
-var ago=sec!==null&&sec!==undefined?Math.floor(Date.now()/1000-sec)+'s ago':'--';
-ht+='<div class="conn-card"><div class="dot '+st+'"></div><div class="cinfo"><div class="cname">'+c.n+'</div><div class="cstate">'+labels[st]+'</div><div class="cage">'+ago+'</div></div></div>';
+// ====== 核心工具函数 ======
+function h(tag, text, cls, parent) {
+  var el = document.createElement(tag);
+  if (text) el.textContent = text;
+  if (cls) el.className = cls;
+  if (parent) parent.appendChild(el);
+  return el;
 }
-document.getElementById('conn-cards').innerHTML=ht;
-var cur=h.overall||'';
-if(_prevH&&_prevH!==cur){
-var msgs={healthy:'System OK',degraded:'Warning: partial issue',critical:'Critical: check connections'};
-showToast(msgs[cur]||cur,cur==='healthy'?'info':cur==='degraded'?'warn':'error')}
-_prevH=cur}).catch(function(){})}
-setInterval(pollHealth,3000);pollHealth();
 
-// ===== OVERVIEW =====
-function loadOverview(){
-fetch('/api/status').then(function(r){return r.json()}).then(function(s){
-var d=s.drone||{};var h=s.hangar||{};
-// Drone
-document.getElementById('drone-grid').innerHTML=
-'<div class="info-item"><div class="il">Mode</div><div class="iv">'+(d.mode||'--')+'</div></div>'+
-'<div class="info-item"><div class="il">Battery</div><div class="iv">'+(d.battery||'--')+'%</div></div>'+
-'<div class="info-item"><div class="il">Altitude</div><div class="iv">'+(d.alt||'--')+'m</div></div>'+
-'<div class="info-item"><div class="il">Speed</div><div class="iv">'+(d.groundspeed||'--')+'m/s</div></div>'+
-'<div class="info-item"><div class="il">Satellites</div><div class="iv">'+(d.satellites||'--')+'</div></div>'+
-'<div class="info-item"><div class="il">GPS</div><div class="iv" style="font-size:11px">'+(d.lat||'--')+','+(d.lon||'--')+'</div></div>'+
-'<div class="info-item"><div class="il">Fix</div><div class="iv">'+(d.fix_type||'--')+'</div></div>'+
-'<div class="info-item"><div class="il">Armed</div><div class="iv">'+(d.armed?'YES':'NO')+'</div></div>';
-// Hangar
-document.getElementById('hangar-grid').innerHTML=
-'<div class="info-item"><div class="il">Door</div><div class="iv">'+(h.door||'--')+'</div></div>'+
-'<div class="info-item"><div class="il">Lock</div><div class="iv">'+(h.lock||'--')+'</div></div>'+
-'<div class="info-item"><div class="il">Temp</div><div class="iv">'+(h.temperature||'--')+'\u00b0C</div></div>'+
-'<div class="info-item"><div class="il">Humidity</div><div class="iv">'+(h.humidity||'--')+'%</div></div>';
-}).catch(function(){});
-
-// System
-fetch('/api/system').then(function(r){return r.json()}).then(function(s){
-var cp=s.cpu_percent||0;document.getElementById('sys-cpu').style.width=Math.min(cp,100)+'%';document.getElementById('sys-cpu-v').textContent=cp.toFixed(1)+'%';
-var rp=s.ram_percent||0;document.getElementById('sys-ram').style.width=rp+'%';document.getElementById('sys-ram-v').textContent=rp.toFixed(1)+'%';
-var dp=s.disk_percent||0;document.getElementById('sys-disk').style.width=dp+'%';document.getElementById('sys-disk-v').textContent=dp.toFixed(1)+'%';
-document.getElementById('sys-detail').textContent='Load: '+(s.load_avg||[]).join(' / ')+' | RAM: '+(s.ram_used||'--')+'/'+(s.ram_total||'--')+' | Disk: '+(s.disk_used||'--')+'/'+(s.disk_total||'--')+' | PID: '+(s.pid||'--');
-}).catch(function(){});
-
-// Events
-fetch('/api/events?count=8').then(function(r){return r.json()}).then(function(d){
-var evs=d.events||[];var ht='';
-for(var i=evs.length-1;i>=0;i--){var e=evs[i];var dt=new Date(e.ts*1000);var ts=dt.toTimeString().substring(0,8);
-ht+='<div class="event-row"><span class="elv '+e.level+'">'+e.level.toUpperCase()+'</span><span class="ets">'+ts+'</span><span class="esrc">'+e.source+'</span><span class="emsg">'+e.message+'</span></div>'}
-document.getElementById('overview-events').innerHTML=ht||'<div style="color:var(--dim);text-align:center;padding:10px">No events</div>';
-}).catch(function(){});
+function showToast(msg, level) {
+  var lv = level || "info";
+  var c = document.getElementById("toast-container");
+  if (!c) return;
+  var t = h("div", "", "toast " + lv, c);
+  h("span", msg, "tmsg", t);
+  var x = h("span", "\u00d7", "tclose", t);
+  x.onclick = function() { c.removeChild(t); };
+  setTimeout(function() { if (t.parentNode) c.removeChild(t); }, 5000);
 }
-setInterval(function(){if(document.getElementById('tab-overview').classList.contains('active'))loadOverview()},5000);
-loadOverview();
 
-// ===== CONFIG =====
-function loadConfigForm(){fetch('/api/config').then(function(r){return r.json()}).then(function(cfg){
-var mq=cfg.mqtt||{};sv('cfg-mqtt-enabled',!!mq.enabled,'c');sv('cfg-mqtt-broker',mq.broker);sv('cfg-mqtt-port',mq.port,1883);sv('cfg-mqtt-client_id',mq.client_id);sv('cfg-mqtt-username',mq.username);sv('cfg-mqtt-password',mq.password);sv('cfg-mqtt-topic_prefix',mq.topic_prefix);sv('cfg-mqtt-keepalive',mq.keepalive,30);sv('cfg-mqtt-qos',mq.qos,1);
-var ml=cfg.mavlink||{};sv('cfg-mavlink-host',ml.host);sv('cfg-mavlink-port',ml.port,5760);sv('cfg-mavlink-heartbeat_timeout',ml.heartbeat_timeout,5);
-var cam=cfg.camera||{};sv('cfg-camera-ip',cam.ip,'10.6.3.57');sv('cfg-camera-port',cam.port,554);sv('cfg-camera-username',cam.username,'admin');sv('cfg-camera-password',cam.password);sv('cfg-camera-channel',cam.channel,1);sv('cfg-camera-rtsp_url',cam.rtsp_url);
-var st=cfg.stm32||{};sv('cfg-stm32-port',st.port,'/dev/ttyACM0');sv('cfg-stm32-baudrate',st.baudrate,115200);
-var dc=cfg.decision||{};sv('cfg-decision-auto_open_on_rtl',dc.auto_open_on_rtl!==false,'c');sv('cfg-decision-low_battery_threshold',dc.low_battery_threshold,20);sv('cfg-decision-lost_timeout',dc.lost_timeout,30);
-}).catch(function(e){showToast('Config load error: '+e.message,'error')})}
-function sv(id,val,def){var el=document.getElementById(id);if(!el)return;if(def==='c'){el.checked=!!val}else{el.value=val!==undefined&&val!==null?val:(def!==undefined?def:'')}}
-function cfgChanged(){document.getElementById('cfg-save-status').innerHTML='<span class="badge yellow">UNSAVED</span>'}
-function gv(id,def,type){var el=document.getElementById(id);if(!el)return def;if(type==='c')return el.checked;if(type==='i'){var v=parseInt(el.value);return isNaN(v)?def:v}if(type==='f'){var v=parseFloat(el.value);return isNaN(v)?def:v}return el.value||def}
-function saveConfig(){
-var cfg={
-mqtt:{enabled:gv('cfg-mqtt-enabled',false,'c'),broker:gv('cfg-mqtt-broker',''),port:gv('cfg-mqtt-port',1883,'i'),client_id:gv('cfg-mqtt-client_id',''),username:gv('cfg-mqtt-username',''),password:gv('cfg-mqtt-password',''),topic_prefix:gv('cfg-mqtt-topic_prefix','hangar/'),keepalive:gv('cfg-mqtt-keepalive',30,'i'),qos:gv('cfg-mqtt-qos',1,'i')},
-mavlink:{host:gv('cfg-mavlink-host',''),port:gv('cfg-mavlink-port',5760,'i'),heartbeat_timeout:gv('cfg-mavlink-heartbeat_timeout',5,'i')},
-camera:{enabled:true,ip:gv('cfg-camera-ip',''),port:gv('cfg-camera-port',554,'i'),username:gv('cfg-camera-username',''),password:gv('cfg-camera-password',''),channel:gv('cfg-camera-channel',1,'i'),rtsp_url:gv('cfg-camera-rtsp_url','')},
-stm32:{port:gv('cfg-stm32-port','/dev/ttyACM0'),baudrate:gv('cfg-stm32-baudrate',115200,'i')},
-decision:{auto_open_on_rtl:gv('cfg-decision-auto_open_on_rtl',true,'c'),low_battery_threshold:gv('cfg-decision-low_battery_threshold',20,'i'),lost_timeout:gv('cfg-decision-lost_timeout',30,'i')}
-};
-fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).then(function(r){return r.json()}).then(function(res){
-if(res.ok){document.getElementById('cfg-save-status').innerHTML='<span class="badge green">SAVED</span>';showToast('Saved. Run: hangar reload','info')}
-else{var det=res.details||[];document.getElementById('cfg-save-status').innerHTML='<span class="badge red">FAILED</span><br>'+det.map(function(d){return '- '+d}).join('<br>');showToast('Failed: '+res.error,'error')}
-}).catch(function(e){showToast('Error: '+e.message,'error')})}
+// ====== Tab 切换 ======
+function switchTab(id, btn) {
+  document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+  document.querySelectorAll("nav button").forEach(function(b) { b.classList.remove("active"); });
+  var tab = document.getElementById("tab-" + id);
+  if (tab) tab.classList.add("active");
+  if (btn) btn.classList.add("active");
+  // 切换到日志页时刷新
+  if (id === "logs") { loadEvents(); loadLogs(); }
+  if (id === "config") loadConfig();
+}
 
-// ===== CONTROL =====
-function sendCmd(cmd){fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})}).then(function(r){return r.json()}).then(function(res){var el=document.getElementById('cmd-result');if(res.ok){el.innerHTML='<span class="badge green">OK: '+cmd+'</span>'}else{el.innerHTML='<span class="badge red">FAIL: '+res.error+'</span>'}}).catch(function(e){document.getElementById('cmd-result').innerHTML='<span class="badge red">'+e.message+'</span>'})}
-function restartService(){if(!confirm('Restart?'))return;fetch('/api/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json()}).then(function(res){showToast(res.msg||'OK','info')})}
-function captureSnapshot(){showToast('Capturing...','info');fetch('/api/camera/snapshot',{method:'POST'}).then(function(r){return r.json()}).then(function(res){showToast(res.ok?'Done: '+res.file:'Failed: '+res.error,res.ok?'info':'error')}).catch(function(e){showToast('Error: '+e.message,'error')})}
+// ====== 健康轮询 (每秒) ======
+function startSSE(){var es=new EventSource("/api/stream");es.onmessage=function(e){try{var d=JSON.parse(e.data);APP=d;updateConnectionCards(d);updateOverview(d);updateSystemBars(d);updateRecentEvents(d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}catch(ex){}};es.onerror=function(){es.close();setTimeout(startSSE,3000)};}
 
-// Upgrade
-function loadUpgradeStatus(){fetch('/api/upgrade/status').then(function(r){return r.json()}).then(function(s){document.getElementById('upg-state-label').textContent=(s.state||'idle').toUpperCase();document.getElementById('upg-progress').style.width=(s.progress||0)+'%';document.getElementById('upg-info').textContent=(s.info||'')+(s.error?' ERROR: '+s.error:'')}).catch(function(){})}
-function startUpgrade(){var p=document.getElementById('upg-path').value;if(!p){showToast('Enter path','warn');return}fetch('/api/upgrade/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(res){if(res.ok){showToast('Upgrade started','info')}else{showToast('Failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
-function cancelUpgrade(){fetch('/api/upgrade/cancel',{method:'POST'}).then(function(r){return r.json()}).then(function(res){showToast(res.ok?'Cancelled':'Failed','info')}).catch(function(){})}
+// ====== 连接状态卡片 ======
+var _MOD_NAMES = {mavlink:"MAVLink 无人机", mqtt:"MQTT 地面站", stm32:"STM32 下位机", camera:"摄像头"};
+var _MOD_LABEL = {mavlink:{k:"last_hb_sec",label:"心跳"}, mqtt:{k:"last_msg_sec",label:"消息"}, stm32:{k:"last_status_sec",label:"状态上报"}, camera:{k:"last_snapshot_sec",label:"截图"}};
 
-// Decision rules
-function loadDecisionRules(){fetch('/api/decision').then(function(r){return r.json()}).then(function(d){var rules=d.rules||[];var ht='';for(var i=0;i<rules.length;i++){var r=rules[i];ht+='<div class="card"><h3>'+r.name+'</h3><div style="font-size:10px;color:var(--dim)">'+r.description+'</div><span class="badge '+(r.enabled?'green':'red')+'">'+(r.enabled?'ON':'OFF')+'</span></div>'}document.getElementById('decision-rules').innerHTML=ht}).catch(function(){})}
+function updateConnectionCards(d) {
+  var c = document.getElementById("conn-cards");
+  if (!c) return;
+  c.innerHTML = "";
+  ["mavlink","mqtt","stm32","camera"].forEach(function(k) {
+    var m = d[k] || {};
+    var card = h("div", "", "conn-card", c);
+    h("div", "", "dot " + (m.status || "dead"), card);
+    var info = h("div", "", "cinfo", card);
+    h("div", _MOD_NAMES[k] || k, "cname", info);
+    var stateText = m.status === "healthy" ? "正常" : m.status === "stale" ? "延迟" : "离线";
+    var stateEl = h("div", stateText, "cstate " + (m.status || "dead"), info);
+    var age = m[_MOD_LABEL[k].k];
+    var ageText = (age != null && age >= 0) ? Math.floor(age) + "秒" : "--";
+    h("div", (_MOD_LABEL[k].label || "") + ": " + ageText, "cage", info);
+  });
+}
 
-// ===== LOGS =====
-var _evtFilter='all';
-function filterEvents(l){_evtFilter=l;['all','info','warn','error'].forEach(function(k){var b=document.getElementById('ef-'+k);if(b)b.style.background=k===l?'var(--blue)':''});loadEvents()}
-function loadEvents(){fetch('/api/events?count=100').then(function(r){return r.json()}).then(function(d){var evs=d.events||[];var ht='';for(var i=evs.length-1;i>=0;i--){var e=evs[i];if(_evtFilter!=='all'&&e.level!==_evtFilter)continue;var dt=new Date(e.ts*1000);var ts=dt.toTimeString().substring(0,8);ht+='<div class="event-row"><span class="elv '+e.level+'">'+e.level.toUpperCase()+'</span><span class="ets">'+ts+'</span><span class="esrc">'+e.source+'</span><span class="emsg">'+e.message+'</span></div>'}document.getElementById('events-list').innerHTML=ht||'<div style="color:var(--dim);text-align:center;padding:20px">No events</div>'}).catch(function(){})}
-function loadLogs(){fetch('/api/logs').then(function(r){return r.json()}).then(function(d){document.getElementById('logs-content').textContent=d.lines||'(empty)'}).catch(function(){});}
+// ====== 遥测 + 机库状态 ======
+function updateOverview(d) {
+  var dg = document.getElementById("drone-grid");
+  if (dg && d.drone) {
+    dg.innerHTML = "";
+    addInfo(dg, "飞行模式", d.drone.mode || "--");
+    addInfo(dg, "GPS卫星", d.drone.satellites != null ? d.drone.satellites : "--");
+    addInfo(dg, "GPS定位", d.drone.gps_fix != null ? ["无","2D","3D","RTK"][d.drone.gps_fix]||"--" : "--");
+    addInfo(dg, "高度(m)", d.drone.alt_rel != null ? d.drone.alt_rel : "--");
+    addInfo(dg, "地速(m/s)", d.drone.groundspeed != null ? d.drone.groundspeed : "--");
+    addInfo(dg, "航向(°)", d.drone.heading != null ? d.drone.heading : "--");
+    addInfo(dg, "电量(%)", d.drone.battery != null ? d.drone.battery : "--");
+    addInfo(dg, "电压(V)", d.drone.voltage != null ? d.drone.voltage : "--");
+    addInfo(dg, "解锁状态", d.drone.armed ? "已解锁" : "未解锁");
+    addInfo(dg, "纬度", d.drone.lat != null ? d.drone.lat.toFixed(6) : "--");
+    addInfo(dg, "经度", d.drone.lon != null ? d.drone.lon.toFixed(6) : "--");
+    addInfo(dg, "横滚(°)", d.drone.roll != null ? d.drone.roll : "--");
+    addInfo(dg, "俯仰(°)", d.drone.pitch != null ? d.drone.pitch : "--");
+    addInfo(dg, "当前航点", d.drone.wp_current != null ? d.drone.wp_current : "--");
+  }
+  var hg = document.getElementById("hangar-grid");
+  if (hg && d.hangar) {
+    hg.innerHTML = "";
+    addInfo(hg, "舱门状态", d.hangar.door || "--");
+    addInfo(hg, "锁状态", d.hangar.lock || "--");
+    addInfo(hg, "温度(°C)", d.hangar.temp != null ? d.hangar.temp : "--");
+    addInfo(hg, "湿度(%)", d.hangar.humidity != null ? d.hangar.humidity : "--");
+    var alarms = d.hangar.alarm_flags;
+    if (alarms != null) {
+      addInfo(hg, "告警标志", "0x" + alarms.toString(16).toUpperCase());
+    }
+  }
+}
 
-// ===== INIT =====
-pollHealth();
+function addInfo(parent, label, value) {
+  var item = h("div", "", "info-item", parent);
+  h("div", label, "il", item);
+  h("div", String(value), "iv", item);
+}
+
+// ====== 系统资源条 ======
+function updateSystemBars(d) {
+  if (!d.system) return;
+  var cpu = d.system.cpu || 0;
+  var ramPct = d.system.ram_pct || 0;
+  var diskPct = d.system.disk_pct || 0;
+  var cpuEl = document.getElementById("sys-cpu");
+  var ramEl = document.getElementById("sys-ram");
+  var diskEl = document.getElementById("sys-disk");
+  if (cpuEl) { cpuEl.style.width = Math.min(cpu, 100) + "%"; }
+  if (ramEl) { ramEl.style.width = Math.min(ramPct, 100) + "%"; }
+  if (diskEl) { diskEl.style.width = Math.min(diskPct, 100) + "%"; }
+  var cv = document.getElementById("sys-cpu-v");
+  if (cv) cv.textContent = "CPU " + Math.round(cpu) + "%";
+  var rv = document.getElementById("sys-ram-v");
+  if (rv) rv.textContent = "RAM " + Math.round(ramPct) + "%";
+  var dv = document.getElementById("sys-disk-v");
+  if (dv) dv.textContent = "磁盘 " + Math.round(diskPct) + "%";
+  var det = document.getElementById("sys-detail");
+  if (det) {
+    det.textContent = "内存 " + (d.system.ram_used || "--") + " / " + (d.system.ram_total || "--") +
+      " | 磁盘 " + (d.system.disk_used || "--") + " / " + (d.system.disk_total || "--");
+  }
+}
+
+// ====== 最近事件 ======
+function updateRecentEvents(d) {
+  var evs = d.events || [];
+  var el = document.getElementById("overview-events");
+  if (!el) return;
+  if (evs.length === 0) {
+    el.innerHTML = '<span style="color:var(--dim)">暂无事件</span>';
+    return;
+  }
+  var ht = "";
+  for (var i = evs.length - 1; i >= Math.max(0, evs.length - 5); i--) {
+    var e = evs[i];
+    var dt = new Date((e.ts || 0) * 1000);
+    var ts = dt.toTimeString().substring(0, 8);
+    var levelCN = e.level === "info" ? "信息" : e.level === "warn" ? "警告" : "错误";
+    ht += '<div class="event-row"><span class="elv ' + (e.level||"info") + '">' + levelCN +
+      '</span><span class="ets">' + ts + '</span><span class="emsg">' + (e.message||"") + '</span></div>';
+  }
+  el.innerHTML = ht;
+}
+
+// ====== 配置加载/保存 ======
+function loadConfig() {
+  fetch("/api/config")
+    .then(function(r) { return r.json(); })
+    .then(function(cfg) {
+      setVal("cfg-mqtt-enabled", (cfg.mqtt||{}).enabled ? "true" : "false");
+      setVal("cfg-mqtt-broker", (cfg.mqtt||{}).broker || "");
+      setVal("cfg-mqtt-port", (cfg.mqtt||{}).port || 1883);
+      setVal("cfg-mqtt-username", (cfg.mqtt||{}).username || "");
+      setVal("cfg-mqtt-password", (cfg.mqtt||{}).password || "");
+      setVal("cfg-mqtt-topic_prefix", (cfg.mqtt||{}).topic_prefix || "hangar/");
+      setVal("cfg-mavlink-host", (cfg.mavlink||{}).host || "");
+      setVal("cfg-mavlink-port", (cfg.mavlink||{}).port || 5760);
+      setVal("cfg-mavlink-hb_timeout", (cfg.mavlink||{}).heartbeat_timeout || 5);
+      setVal("cfg-camera-ip", (cfg.camera||{}).ip || "");
+      setVal("cfg-camera-port", (cfg.camera||{}).port || 554);
+      setVal("cfg-camera-username", (cfg.camera||{}).username || "");
+      setVal("cfg-camera-password", (cfg.camera||{}).password || "");
+      setVal("cfg-camera-channel", (cfg.camera||{}).channel || 1);
+      setVal("cfg-camera-rtsp_url", (cfg.camera||{}).rtsp_url || "");
+      setVal("cfg-stm32-port", (cfg.stm32||{}).port || "/dev/ttyACM0");
+      setVal("cfg-stm32-baudrate", (cfg.stm32||{}).baudrate || 115200);
+      setVal("cfg-decision-auto_open_on_rtl", (cfg.decision||{}).auto_open_on_rtl ? "true" : "false");
+      setVal("cfg-decision-low_battery_threshold", (cfg.decision||{}).low_battery_threshold || 20);
+      setVal("cfg-decision-lost_timeout", (cfg.decision||{}).lost_timeout || 30);
+    })
+    .catch(function(e) { console.log("Load config error:", e); });
+}
+
+function setVal(id, val) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (el.type === "checkbox") el.checked = (val === true || val === "true");
+  else el.value = val;
+}
+
+function gv(id, def, t) {
+  var el = document.getElementById(id);
+  if (!el) return def;
+  if (t === "i") return parseInt(el.value) || def;
+  if (t === "c") return el.type === "checkbox" ? el.checked : (el.value === "true");
+  return el.value;
+}
+
+function saveConfig() {
+  var cfg = {
+    mqtt: {enabled: gv("cfg-mqtt-enabled","false")==="true", broker: gv("cfg-mqtt-broker",""), port: gv("cfg-mqtt-port",1883,"i"), username: gv("cfg-mqtt-username",""), password: gv("cfg-mqtt-password",""), topic_prefix: gv("cfg-mqtt-topic_prefix","hangar/")},
+    mavlink: {host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i")},
+    camera: {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")},
+    stm32: {port: gv("cfg-stm32-port","/dev/ttyACM0"), baudrate: gv("cfg-stm32-baudrate",115200,"i")},
+    decision: {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")}
+  };
+  fetch("/api/config", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(cfg)})
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      var st = document.getElementById("cfg-save-status");
+      if (res.ok) {
+        if (st) st.innerHTML = '<span class="badge green">已保存</span>';
+        showToast("配置保存成功，执行 hangar reload 使配置生效", "info");
+      } else {
+        var det = res.details || [];
+        if (st) st.innerHTML = '<span class="badge red">保存失败</span><br>' + det.map(function(d) { return "- " + d; }).join("<br>");
+        showToast("保存失败: " + (res.error || "未知错误"), "error");
+      }
+    })
+    .catch(function(e) { showToast("错误: " + e.message, "error"); });
+}
+
+// ====== 控制指令 ======
+function sendCmd(cmd) {
+  fetch("/api/command", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({cmd:cmd})})
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      var el = document.getElementById("cmd-result");
+      if (res.ok) {
+        if (el) el.innerHTML = '<span class="badge green">成功: ' + cmd + '</span>';
+        showToast("指令已发送: " + cmd, "info");
+      } else {
+        if (el) el.innerHTML = '<span class="badge red">失败: ' + (res.error || cmd) + '</span>';
+        showToast("指令失败: " + (res.error || "未知错误"), "error");
+      }
+    })
+    .catch(function(e) {
+      var el = document.getElementById("cmd-result");
+      if (el) el.innerHTML = '<span class="badge red">' + e.message + '</span>';
+      showToast("错误: " + e.message, "error");
+    });
+}
+
+function restartService() {
+  if (!confirm("确定重启服务？这将断开所有连接。")) return;
+  fetch("/api/restart", {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"})
+    .then(function(r) { return r.json(); })
+    .then(function(res) { showToast(res.msg || "已发送重启请求", "info"); })
+    .catch(function(e) { showToast("错误: " + e.message, "error"); });
+}
+
+function captureSnapshot() {
+  showToast("正在截图...", "info");
+  fetch("/api/camera/snapshot", {method:"POST"})
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      showToast(res.ok ? "截图完成: " + res.file : "截图失败: " + (res.error || "?"), res.ok ? "info" : "error");
+    })
+    .catch(function(e) { showToast("错误: " + e.message, "error"); });
+}
+
+// ====== 事件日志 ======
+var _evtFilter = "all";
+function filterEvents(l) {
+  _evtFilter = l;
+  ["all","info","warn","error"].forEach(function(k) {
+    var b = document.getElementById("ef-" + k);
+    if (b) b.className = (k === l) ? "on" : "";
+  });
+  loadEvents();
+}
+
+function loadEvents() {
+  fetch("/api/events?count=100")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var evs = d.events || [];
+      var ht = "";
+      for (var i = evs.length - 1; i >= 0; i--) {
+        var e = evs[i];
+        if (_evtFilter !== "all" && e.level !== _evtFilter) continue;
+        var dt = new Date((e.ts || 0) * 1000);
+        var ts = dt.toTimeString().substring(0, 8);
+        var levelCN = e.level === "info" ? "信息" : e.level === "warn" ? "警告" : "错误";
+        ht += '<div class="event-row"><span class="elv ' + (e.level||"info") + '">' + levelCN +
+          '</span><span class="ets">' + ts + '</span><span class="esrc">' + (e.source||"") +
+          '</span><span class="emsg">' + (e.message||"") + '</span></div>';
+      }
+      var el = document.getElementById("events-list");
+      if (el) el.innerHTML = ht || '<div style="color:var(--dim);text-align:center;padding:20px">暂无事件</div>';
+    })
+    .catch(function() {});
+}
+
+function loadLogs() {
+  fetch("/api/logs")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var el = document.getElementById("logs-content");
+      if (el) el.textContent = d.lines || "(空)";
+    })
+    .catch(function() {
+      var el = document.getElementById("logs-content");
+      if (el) el.textContent = "(日志加载失败)";
+    });
+}
+
+// ====== 决策规则加载 ======
+function loadDecisionRules() {
+  fetch("/api/decision")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var el = document.getElementById("decision-rules");
+      if (el && d.rules) {
+        el.innerHTML = d.rules.map(function(r, i) {
+          return '<div style="padding:4px 0;border-bottom:1px solid var(--border)">' +
+            '<b>' + (r.name || "规则"+(i+1)) + '</b>: ' + (r.desc || "") +
+            ' <span class="badge ' + (r.active ? "green" : "yellow") + '">' + (r.active ? "启用" : "禁用") + '</span></div>';
+        }).join("");
+      }
+    })
+    .catch(function() {});
+}
+
+// ====== 启动 ======
+startSSE();
+setInterval(loadEvents, 5000);
+setInterval(loadLogs, 10000);
+loadConfig();
+loadDecisionRules();
 </script>
 </body>
 </html>

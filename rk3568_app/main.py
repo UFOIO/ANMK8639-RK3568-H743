@@ -175,34 +175,61 @@ def main():
 
 
 def _print_heartbeat(app_state, config):
-    """每30秒打印系统资源 + 各模块数据新鲜度摘要"""
-    health = app_state.health()
+    """Print system resources + module data freshness every second."""
+    h = app_state.health()
     uptime = _fmt_uptime(app_state.uptime)
-    
-    # 系统资源
+
     try:
-        with open("/proc/loadavg") as f: load = f.read().split()[0]
-        with open("/proc/meminfo") as f:
+        with open('/proc/loadavg') as f:
+            load = f.read().split()[0]
+        with open('/proc/meminfo') as f:
             mem = {}
             for line in f:
-                p = line.split(":")
-                if len(p) == 2: mem[p[0].strip()] = int(p[1].strip().split()[0])
-        ram_used = (mem.get("MemTotal",1)-mem.get("MemAvailable",1))//1024
-        ram_total = mem.get("MemTotal",1)//1024
-        print("SYS: load=" + load + " ram=" + str(ram_used, flush=True) + "M/" + str(ram_total) + "M uptime=" + uptime)
-    except: pass
-    
-    # 各模块数据新鲜度
+                p = line.split(':')
+                if len(p) == 2:
+                    mem[p[0].strip()] = int(p[1].strip().split()[0])
+        ram_used = (mem.get('MemTotal', 1) - mem.get('MemAvailable', 1)) // 1024
+        ram_total = mem.get('MemTotal', 1) // 1024
+        print('SYS: load=' + load + ' ram=' + str(ram_used) + 'M/' + str(ram_total) + 'M uptime=' + uptime, flush=True)
+    except Exception:
+        pass
+
     def _age(k, key):
-        d = health.get(k, {})
+        d = h.get(k, {})
         sec = d.get(key)
-        return str(int(time.time()-sec))+"s" if sec is not None else "--"
-    
-    print("DATA: MAVLink HB:" + _age("mavlink","last_hb_sec", flush=True) + 
-          " | MQTT MSG:" + _age("mqtt","last_msg_sec") + 
-          " | STM32 RPT:" + _age("stm32","last_status_sec") + 
-          " | Camera SNAP:" + _age("camera","last_snapshot_sec"))
-    sys.stdout.flush()
+        if sec is None:
+            return '--'
+        if sec < 60:
+            return str(int(sec)) + 's'
+        elif sec < 3600:
+            return str(int(sec // 60)) + 'm' + str(int(sec % 60)) + 's'
+        else:
+            return str(int(sec // 3600)) + 'h' + str(int((sec % 3600) // 60)) + 'm'
+
+    parts = []
+    mav = h.get('mavlink', {})
+    parts.append('MAVLink ' + ('UP' if mav.get('connected') else 'DOWN') + ' HB:' + _age('mavlink', 'last_hb_sec'))
+    mqtt = h.get('mqtt', {})
+    parts.append('MQTT ' + ('UP' if mqtt.get('connected') else 'DOWN') + ' MSG:' + _age('mqtt', 'last_msg_sec'))
+    stm = h.get('stm32', {})
+    parts.append('STM32 ' + ('UP' if stm.get('connected') else 'DOWN') + ' RPT:' + _age('stm32', 'last_status_sec'))
+    cam = h.get('camera', {})
+    parts.append('Camera SNAP:' + _age('camera', 'last_snapshot_sec'))
+    print('DATA: ' + ' | '.join(parts), flush=True)
+
+    drone = h.get('drone', {})
+    if drone.get('mode') and drone['mode'] != 'UNKNOWN':
+        telem = []
+        telem.append('MODE:' + str(drone.get('mode', '?')))
+        if drone.get('armed'):
+            telem.append('ARMED')
+        telem.append('ALT:' + str(drone.get('alt_rel', '?')) + 'm')
+        telem.append('GS:' + str(drone.get('groundspeed', '?')) + 'm/s')
+        telem.append('BAT:' + str(drone.get('battery', '?')) + '%')
+        telem.append('SAT:' + str(drone.get('satellites', '?')))
+        print('TELEM: ' + ' | '.join(telem), flush=True)
+
+
 def _fmt_uptime(sec):
     d = int(sec // 86400)
     h = int((sec % 86400) // 3600)

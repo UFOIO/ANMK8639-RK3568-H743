@@ -1,3 +1,4 @@
+from typing import Optional
 """
 MQTT 消息格式定义。
 
@@ -24,7 +25,7 @@ def build_message(msg_type: str, payload: dict) -> str:
     return json.dumps(envelope, ensure_ascii=False)
 
 
-def parse_message(raw: str) -> dict | None:
+def parse_message(raw: str) -> Optional[dict]:
     """解析 MQTT 消息，返回信封字典或 None。"""
     try:
         return json.loads(raw)

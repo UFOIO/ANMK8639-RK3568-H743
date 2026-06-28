@@ -13,6 +13,31 @@ import yaml
 import subprocess
 import signal
 from http.server import HTTPServer, BaseHTTPRequestHandler
+def _get_system_info():
+    """读取系统资源"""
+    info = {"cpu": 0, "ram_pct": 0, "ram_used": "0M", "ram_total": "0M",
+            "disk_pct": 0, "disk_used": "0G", "disk_total": "0G"}
+    try:
+        with open("/proc/loadavg") as f: info["cpu"] = round(float(f.read().split()[0]) * 100, 1)
+    except: pass
+    try:
+        with open("/proc/meminfo") as f:
+            mem = {}
+            for line in f:
+                p = line.split(":")
+                if len(p) == 2: mem[p[0].strip()] = int(p[1].strip().split()[0])
+        total = mem.get("MemTotal", 1); avail = mem.get("MemAvailable", 1); used = total - avail
+        info["ram_pct"] = round(used / total * 100, 1)
+        info["ram_used"] = str(used // 1024) + "M"; info["ram_total"] = str(total // 1024) + "M"
+    except: pass
+    try:
+        st = os.statvfs("/")
+        total = st.f_frsize * st.f_blocks; free = st.f_frsize * st.f_bavail; used = total - free
+        info["disk_pct"] = round(used / total * 100, 1)
+        info["disk_used"] = str(round(used / (1024**3), 1)) + "G"; info["disk_total"] = str(round(total / (1024**3), 1)) + "G"
+    except: pass
+    return info
+
 from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
@@ -25,94 +50,6 @@ def _load_dashboard():
             return f.read()
     except Exception:
         return "<h1>Dashboard HTML not found at " + _DASHBOARD_PATH + "</h1>"
-
-
-def _get_system_info():
-    """Collect system resource info (cross-platform)."""
-    info = {
-        "cpu_percent": 0,
-        "load_avg": [],
-        "ram_percent": 0,
-        "ram_used": "",
-        "ram_total": "",
-        "disk_percent": 0,
-        "disk_used": "",
-        "disk_total": "",
-        "uptime": 0,
-        "pid": os.getpid(),
-    }
-    try:
-        # CPU load
-        if hasattr(os, "getloadavg"):
-            info["load_avg"] = [round(x, 2) for x in os.getloadavg()]
-            info["cpu_percent"] = info["load_avg"][0] * 100 / os.cpu_count() if os.cpu_count() else info["load_avg"][0] * 100
-
-        # Memory from /proc/meminfo
-        try:
-            with open("/proc/meminfo") as f:
-                mem = {}
-                for line in f:
-                    parts = line.split(":")
-                    if len(parts) == 2:
-                        mem[parts[0].strip()] = int(parts[1].strip().split()[0])
-                total = mem.get("MemTotal", 0)
-                available = mem.get("MemAvailable", 0)
-                used = total - available
-                info["ram_total"] = f"{total // 1024} MB"
-                info["ram_used"] = f"{used // 1024} MB"
-                info["ram_percent"] = round(used / total * 100, 1) if total > 0 else 0
-        except Exception:
-            pass
-
-        # Disk
-        try:
-            stat = os.statvfs("/")
-            total = stat.f_frsize * stat.f_blocks
-            free = stat.f_frsize * stat.f_bavail
-            used = total - free
-            info["disk_total"] = f"{total // (1024**3)} GB"
-            info["disk_used"] = f"{used // (1024**3)} GB"
-            info["disk_percent"] = round(used / total * 100, 1) if total > 0 else 0
-        except Exception:
-            pass
-
-        # Uptime
-        try:
-            with open("/proc/uptime") as f:
-                info["uptime"] = float(f.read().split()[0])
-        except Exception:
-            info["uptime"] = time.time() - info.get("_start", time.time())
-
-    except Exception as e:
-        logger.debug("System info collection partial: %s", e)
-
-    return info
-
-
-def _format_size(size_bytes):
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024**2:
-        return f"{size_bytes / 1024:.1f} KB"
-    elif size_bytes < 1024**3:
-        return f"{size_bytes / 1024**2:.1f} MB"
-    return f"{size_bytes / 1024**3:.1f} GB"
-
-
-def _load_yaml_config(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
-
-
-
-def _validate_config(cfg):
-    """校验配置合法性。返回 (ok, error_list)。"""
-    errors = []
-    VALID_BAUDRATES = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600}
-    VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR"}
-    VALID_PARITY = {"N", "E", "O"}
-    VALID_QOS = {0, 1, 2}
-
     def _chk_port(v, name):
         if not isinstance(v, int) or v < 1 or v > 65535:
             errors.append(name + "端口必须在1-65535之间, 当前值: " + str(v))
@@ -188,7 +125,6 @@ def _validate_config(cfg):
 def _save_yaml_config(path, cfg):
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
-
 
 
 LOGIN_HTML = """<!DOCTYPE html>
@@ -305,6 +241,24 @@ class WebUI:
 
                 elif path == "/api/health":
                     self._json(ui._app_state.health())
+                elif path == "/api/stream":
+                    # SSE: push health data every 80ms (<100ms latency)
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Connection", "keep-alive")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    try:
+                        while True:
+                            data = json.dumps(ui._app_state.health(), ensure_ascii=False)
+                            self.wfile.write(("data: " + data + "
+
+").encode())
+                            self.wfile.flush()
+                            time.sleep(0.08)
+                    except (BrokenPipeError, ConnectionResetError, OSError):
+                        pass
 
                 elif path == "/api/events":
                     count = int(qs.get("count", [50])[0])

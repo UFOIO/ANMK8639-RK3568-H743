@@ -4,8 +4,46 @@
 import threading
 import time
 import copy
+import os
 from collections import deque
 
+
+
+def _get_system_info():
+    """??????: CPU/RAM/Disk"""
+    info = {"cpu": 0, "ram_pct": 0, "ram_used": "0M", "ram_total": "0M",
+            "disk_pct": 0, "disk_used": "0G", "disk_total": "0G"}
+    try:
+        with open("/proc/loadavg") as f:
+            info["cpu"] = round(float(f.read().split()[0]) * 100, 1)
+    except Exception:
+        pass
+    try:
+        with open("/proc/meminfo") as f:
+            mem = {}
+            for line in f:
+                p = line.split(":")
+                if len(p) == 2:
+                    mem[p[0].strip()] = int(p[1].strip().split()[0])
+        total = mem.get("MemTotal", 1)
+        avail = mem.get("MemAvailable", 1)
+        used = total - avail
+        info["ram_pct"] = round(used / total * 100, 1)
+        info["ram_used"] = str(used // 1024) + "M"
+        info["ram_total"] = str(total // 1024) + "M"
+    except Exception:
+        pass
+    try:
+        st = os.statvfs("/")
+        total = st.f_frsize * st.f_blocks
+        free = st.f_frsize * st.f_bavail
+        used = total - free
+        info["disk_pct"] = round(used / total * 100, 1)
+        info["disk_used"] = str(round(used / (1024**3), 1)) + "G"
+        info["disk_total"] = str(round(total / (1024**3), 1)) + "G"
+    except Exception:
+        pass
+    return info
 
 class AppState:
     """
@@ -104,9 +142,7 @@ class AppState:
             return result
 
     def health(self) -> dict:
-        """四级健康检查: healthy(绿) / stale(黄) / degraded(橙) / dead(红)
-        每个模块返回 status + age, 整体取最差状态。
-        """
+        """Health check + full telemetry for Web UI dashboard."""
         now = time.time()
         with self._lock:
             d = self._data
@@ -119,11 +155,8 @@ class AppState:
             cam_last = d["system"]["last_camera_snapshot"]
 
         def _status(connected, ts, stale_s=5, dead_s=30):
-            """返回 (status, age_sec).
-            status: 'healthy' | 'stale' | 'dead'
-            """
             if ts is None or ts <= 0:
-                return ("dead", None) if not connected else ("dead", None)
+                return ("dead", None)
             age = round(now - ts, 1)
             if not connected:
                 return ("dead", age)
@@ -137,7 +170,7 @@ class AppState:
         mav_s, mav_age = _status(d["drone"]["connected"], hb_last)
         mqtt_s, mqtt_age = _status(mqtt_conn, mqtt_last)
         stm_s, stm_age = _status(stm32_conn, stm32_last)
-        cam_s, cam_age = _status(True, cam_last, 30, 120)  # 摄像头30s/120s阈值放宽
+        cam_s, cam_age = _status(True, cam_last, 30, 120)
 
         result = {
             "mavlink": {"status": mav_s, "connected": d["drone"]["connected"], "last_hb_sec": mav_age, "last_pos_sec": round(now - pos_last, 1) if pos_last > 0 else None},
@@ -145,9 +178,33 @@ class AppState:
             "stm32": {"status": stm_s, "connected": stm32_conn, "last_status_sec": stm_age},
             "camera": {"status": cam_s, "last_snapshot_sec": cam_age},
             "uptime": self.uptime,
+            "drone": {
+                "mode": d["drone"]["flight_mode"],
+                "armed": d["drone"]["armed"],
+                "satellites": d["drone"]["satellites"],
+                "gps_fix": d["drone"]["gps_fix"],
+                "alt_rel": round(d["drone"]["alt"], 1),
+                "groundspeed": round(d["drone"]["groundspeed"], 1),
+                "battery": d["drone"]["battery_remaining"],
+                "voltage": round(d["drone"]["battery_voltage"], 2),
+                "lat": round(d["drone"]["lat"], 6),
+                "lon": round(d["drone"]["lon"], 6),
+                "heading": d["drone"]["heading"],
+                "roll": round(d["drone"]["roll"], 1),
+                "pitch": round(d["drone"]["pitch"], 1),
+                "wp_current": d["drone"]["wp_current"],
+            },
+            "hangar": {
+                "door": d["hangar"]["door_status"],
+                "lock": d["hangar"]["lock_status"],
+                "temp": round(d["hangar"]["temperature"], 1),
+                "humidity": round(d["hangar"]["humidity"], 1),
+                "alarm_flags": d["hangar"]["alarm_flags"],
+            },
+            "system": _get_system_info(),
+            "events": list(self._event_log)[-20:],
         }
 
-        # 整体 = 最差模块状态
         levels = {"healthy": 0, "stale": 1, "degraded": 2, "dead": 3}
         worst_level = 0
         for mod in ["mavlink", "mqtt", "stm32", "camera"]:

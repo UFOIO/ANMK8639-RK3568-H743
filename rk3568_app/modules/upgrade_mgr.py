@@ -1,3 +1,4 @@
+from typing import Optional
 """
 STM32 固件升级管理器。
 通过 USB 串口 IAP 协议远程升级 STM32H743 固件。
@@ -150,7 +151,7 @@ class UpgradeManager:
         else:
             self._fail("IAP_FINISH rejected by STM32")
 
-    def _load_firmware(self) -> bytes | None:
+    def _load_firmware(self) -> Optional[bytes]:
         try:
             with open(self._firmware_path, "rb") as f:
                 data = f.read()
