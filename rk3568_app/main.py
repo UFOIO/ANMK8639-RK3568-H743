@@ -137,11 +137,11 @@ def main():
             event_bus.poll(timeout=0.1)
             tick += 1
 
-            # 每 30 秒打印系统状态
+            # 每 5 秒心跳 — 始终保持有输出
             now = time.time()
-            if now - last_status >= 30.0:
+            if now - last_status >= 5.0:
                 last_status = now
-                _print_sys_status(_app_state, config)
+                _print_heartbeat(_app_state, config)
     except KeyboardInterrupt:
         _running[0] = False
 
