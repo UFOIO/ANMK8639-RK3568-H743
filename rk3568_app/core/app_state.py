@@ -10,6 +10,9 @@ from collections import deque
 
 
 _prev_cpu_fields = None
+_cpu_cached = 0.0
+_cpu_last_ts = 0.0
+_CPU_INTERVAL = 2.0
 
 def _get_system_info():
     """??????: CPU(??/proc/stat)/RAM/Disk"""
@@ -24,7 +27,12 @@ def _get_system_info():
             ct, ci = sum(fields), fields[3] + fields[4]
             td, id_ = ct - pt, ci - pi
             if td > 0:
-                info["cpu"] = round((td - id_) / td * 100, 1)
+                global _cpu_cached, _cpu_last_ts
+                now = time.time()
+                if now - _cpu_last_ts >= _CPU_INTERVAL:
+                    _cpu_cached = round((td - id_) / td * 100, 1)
+                    _cpu_last_ts = now
+                info["cpu"] = _cpu_cached
         _prev_cpu_fields = fields
     except Exception:
         pass

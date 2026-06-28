@@ -347,6 +347,7 @@ function updateOverview(d) {
     addInfo(dg, "高度(m)", d.drone.alt_rel != null ? d.drone.alt_rel : "--");
     addInfo(dg, "地速(m/s)", d.drone.groundspeed != null ? d.drone.groundspeed : "--");
     addInfo(dg, "航向(°)", d.drone.heading != null ? d.drone.heading : "--");
+    addInfo(dg, "偏航角(°)", d.drone.yaw != null ? d.drone.yaw : "--");
     addInfo(dg, "电量(%)", d.drone.battery != null ? d.drone.battery : "--");
     addInfo(dg, "电压(V)", d.drone.voltage != null ? d.drone.voltage : "--");
     addInfo(dg, "解锁状态", d.drone.armed ? "已解锁" : "未解锁");

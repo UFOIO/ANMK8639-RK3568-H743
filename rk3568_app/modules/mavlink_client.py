@@ -11,6 +11,7 @@ import logging
 import socket
 import threading
 import time
+import math
 from pymavlink import mavutil
 
 from protocol.mavlink_map import mode_name, is_rtl
@@ -211,12 +212,12 @@ class MAVLinkClient:
 
     @handler("ATTITUDE")
     def _on_attitude(self, msg):
-        self._app_state.set("drone.roll", round(msg.roll, 2))
-        self._app_state.set("drone.pitch", round(msg.pitch, 2))
-        self._app_state.set("drone.yaw", round(msg.yaw, 2))
-        self._app_state.set("drone.rollspeed", round(msg.rollspeed, 4))
-        self._app_state.set("drone.pitchspeed", round(msg.pitchspeed, 4))
-        self._app_state.set("drone.yawspeed", round(msg.yawspeed, 4))
+        self._app_state.set("drone.roll", round(math.degrees(msg.roll), 1))
+        self._app_state.set("drone.pitch", round(math.degrees(msg.pitch), 1))
+        self._app_state.set("drone.yaw", round(math.degrees(msg.yaw), 1))
+        self._app_state.set("drone.rollspeed", round(math.degrees(msg.rollspeed), 2))
+        self._app_state.set("drone.pitchspeed", round(math.degrees(msg.pitchspeed), 2))
+        self._app_state.set("drone.yawspeed", round(math.degrees(msg.yawspeed), 2))
 
     @handler("VFR_HUD")
     def _on_vfr_hud(self, msg):
