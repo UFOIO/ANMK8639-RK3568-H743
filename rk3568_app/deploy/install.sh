@@ -37,25 +37,13 @@ ln -sfn "${DATA_DIR}" "${INSTALL_DIR}/data/snapshots"
 
 echo "[5/6] 安装 systemd 服务..."
 cp "${INSTALL_DIR}/deploy/hangar.service" "${SERVICE_FILE}"
+# 确保使用 venv Python
+sed -i "s|/usr/bin/python3|/home/kickpi/hangar_venv/bin/python3|g" "${SERVICE_FILE}"
 systemctl daemon-reload
 systemctl enable "${APP_NAME}"
 
 echo "[6/6] 创建 CLI 命令..."
-cat > "${BIN_LINK}" <<'CLI_EOF'
-#!/bin/bash
-APP_NAME="hangar"
-case "${1:-status}" in
-    start)   sudo systemctl start $APP_NAME ;;
-    stop)    sudo systemctl stop $APP_NAME ;;
-    restart) sudo systemctl restart $APP_NAME ;;
-    reload)  sudo systemctl reload $APP_NAME && echo "SIGHUP 日发送" ;;
-    status)  systemctl status $APP_NAME --no-pager -l; echo; echo "--- 最近日志 ---"; journalctl -u $APP_NAME -n 8 --no-pager ;;
-    logs)    journalctl -u $APP_NAME -f ;;
-    check)   systemctl is-active --quiet $APP_NAME && echo "✅ 运行中" || echo "✌ 未运行"; echo "Main IP :8080" ;;
-    config)  ${EDITOR:-nano} "/etc/hangar/config.yaml" ;;
-    *)       echo "用法: hangar {start|stop|restart|reload|status|logs|check|config}" ;;
-esac
-CLI_EOF
+cp "${INSTALL_DIR}/deploy/hangar-cli.sh" "${BIN_LINK}"
 chmod +x "${BIN_LINK}"
 
 echo ""
