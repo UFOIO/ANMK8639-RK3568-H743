@@ -11,7 +11,7 @@ User=root
 WorkingDirectory=/opt/hangar
 
 # 启动 (配置文件从 /etc/hangar/ 读取)
-ExecStart=/usr/bin/python3 /opt/hangar/main.py -c /etc/hangar/config.yaml -p /run/hangar.pid
+ExecStart=/home/kickpi/hangar_venv/bin/python3 /opt/hangar/main.py -c /etc/hangar/config.yaml -p /run/hangar.pid
 
 # 优雅退出 (SIGTERM)
 ExecStop=/bin/kill -s TERM $MAINPID

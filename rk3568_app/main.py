@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import sys
+import threading
 import time
 
 from utils.config import ConfigLoader
@@ -78,9 +79,19 @@ def main():
     # 保存方便热重载
     _modules = [mqtt, mavlink, stm32, camera, decision, web_ui]
 
+    _module_threads = {}
+    _name_map = {"mqttclient":"mqtt","mavlinkclient":"mavlink","stm32comm":"stm32","cameracapture":"camera","webui":"web_ui","decisionengine":"decision"}
     for mod in _modules:
         try:
             mod.start()
+            # 尝试获取模块线程用于存活检测
+            clsname = mod.__class__.__name__.lower()
+            key = _name_map.get(clsname, clsname)
+            for attr in ["_thread", "_recv_thread", "_server_thread", "thread"]:
+                t = getattr(mod, attr, None)
+                if t and isinstance(t, threading.Thread):
+                    _module_threads[key] = t
+                    break
         except Exception:
             logger.exception("Failed to start %s", mod.__class__.__name__)
 
@@ -129,13 +140,12 @@ def main():
             now = time.time()
             if now - last_status >= 5.0:
                 last_status = now
-                _print_status(_app_state, config)
+                _print_status(_app_state, config, _module_threads)
     except KeyboardInterrupt:
         _running[0] = False
 
     # ===== 清理 (最多等5秒) =====
     logger.info("Shutting down...")
-    import threading as _thr
     def _do_shutdown():
         try:
             _app_state.log_event("system", "info", "机库控制系统关闭")
@@ -147,7 +157,7 @@ def main():
             watchdog.stop()
         except Exception:
             pass
-    _t = _thr.Thread(target=_do_shutdown, daemon=True)
+    _t = threading.Thread(target=_do_shutdown, daemon=True)
     _t.start()
     _t.join(timeout=5.0)
     if _t.is_alive():
@@ -163,45 +173,72 @@ def main():
     logger.info("System stopped. Goodbye.")
 
 
-def _print_status(app_state, config):
-    """打印简洁原始状态数据到终端 — 每个模块一行。"""
+def _print_status(app_state, config, modules_dict=None):
+    """打印每个模块的独立存活状态 — 多行原始数据。
+    modules_dict: {name: thread_object} 用于检测线程存活
+    """
     health = app_state.health()
     status = app_state.to_dict()
     uptime = _fmt_uptime(app_state.uptime)
 
+    # 每个模块独立一行，带存活标识
+    now = time.time()
+    
+    def _alive(mod_name, thread_obj):
+        """检查模块线程是否存活。返回 alive 标识符。"""
+        if thread_obj is None:
+            return "  "  # 未启动
+        if thread_obj.is_alive():
+            return "OK"
+        return "XX"  # 线程已死!
+
+    # 取各模块线程
+    threads = modules_dict or {}
+    
     mav = health["mavlink"]
     mqtt = health["mqtt"]
     stm = health["stm32"]
     cam = health["camera"]
 
-    mav_ago = str(int(time.time()-mav["last_hb_sec"]))+"s" if mav["last_hb_sec"] else "--"
-    mqtt_ago = str(int(time.time()-mqtt["last_msg_sec"]))+"s" if mqtt["last_msg_sec"] else "--"
-    stm_ago = str(int(time.time()-stm["last_status_sec"]))+"s" if stm["last_status_sec"] else "--"
-    cam_ago = str(int(time.time()-cam.get("last_snapshot_sec",0)))+"s" if cam.get("last_snapshot_sec") else "--"
+    mav_ago = str(int(now-mav["last_hb_sec"]))+"s" if mav["last_hb_sec"] else "--"
+    mqtt_ago = str(int(now-mqtt["last_msg_sec"]))+"s" if mqtt["last_msg_sec"] else "--"
+    stm_ago = str(int(now-stm["last_status_sec"]))+"s" if stm["last_status_sec"] else "--"
+    cam_ago = str(int(now-cam.get("last_snapshot_sec",0)))+"s" if cam.get("last_snapshot_sec") else "--"
 
-    # 四级状态映射
     def _s(mod, key="status"):
         s = mod.get(key, "dead")
-        return {"healthy":"OK","stale":"STALE","degraded":"DEGR","dead":"DOWN"}.get(s, "??")
-    mav_ok = _s(mav)
-    mqtt_ok = _s(mqtt)
-    stm_ok = _s(stm)
-    cam_ok = _s(cam)
+        return {"healthy":"OK","stale":"OLD","degraded":"DEG","dead":"DOWN"}.get(s, "??")
+
+    mav_alive = _alive("mavlink", threads.get("mavlink"))
+    mqtt_alive = _alive("mqtt", threads.get("mqtt"))
+    stm_alive = _alive("stm32", threads.get("stm32"))
+    cam_alive = _alive("camera", threads.get("camera"))
+    web_alive = _alive("web_ui", threads.get("web_ui"))
+    dec_alive = _alive("decision", threads.get("decision"))
 
     print("")
-    print("=== STATUS " + time.strftime("%H:%M:%S") + " | UPTIME " + uptime + " | Web :" + str(config.get("web_ui",{}).get("port",8080)) + " ===")
-    print("  MAVLink [" + mav_ok + "]  HB:" + mav_ago + "  |  MQTT [" + mqtt_ok + "]  MSG:" + mqtt_ago)
-    print("  STM32  [" + stm_ok + "]  RPT:" + stm_ago + "  |  Camera [" + cam_ok + "]  SNAP:" + cam_ago)
+    print("=" * 70)
+    print("  ANMK8639  |  " + time.strftime("%Y-%m-%d %H:%M:%S") + "  |  UPTIME " + uptime + "  |  Web :" + str(config.get("web_ui",{}).get("port",8080)))
+    print("-" * 70)
+    print("  MODULE     THREAD   CONN    DATA AGE     DETAIL")
+    print("-" * 70)
+    print("  mavlink    [" + mav_alive + "]     [" + _s(mav) + "]    HB:" + mav_ago.ljust(8) + "  " + str(status.get("drone",{}).get("mode","--")))
+    print("  mqtt       [" + mqtt_alive + "]     [" + _s(mqtt) + "]    MSG:" + mqtt_ago.ljust(8) + "  " + ("enabled" if config.get("mqtt",{}).get("enabled") else "disabled"))
+    print("  stm32      [" + stm_alive + "]     [" + _s(stm) + "]    RPT:" + stm_ago.ljust(8) + "  " + config.get("stm32",{}).get("port","/dev/ttyACM0"))
+    print("  camera     [" + cam_alive + "]     [" + _s(cam) + "]    SNAP:" + cam_ago.ljust(8) + "  rtsp://" + config.get("camera",{}).get("ip","?") + ":" + str(config.get("camera",{}).get("port","?")))
+    print("  web_ui     [" + web_alive + "]     --      --            http://0.0.0.0:" + str(config.get("web_ui",{}).get("port",8080)))
+    print("  decision   [" + dec_alive + "]     --      --            5 rules")
+    print("-" * 70)
 
     drone = status.get("drone", {})
     if drone.get("mode"):
-        print("  DRONE  mode=" + str(drone.get("mode","?")) + "  batt=" + str(drone.get("battery","?")) + "%  alt=" + str(drone.get("alt","?")) + "m  spd=" + str(drone.get("groundspeed","?")) + "m/s  sat=" + str(drone.get("satellites","?")) + "  lat=" + str(drone.get("lat","?")) + "  lon=" + str(drone.get("lon","?")) + "  armed=" + ("YES" if drone.get("armed") else "NO"))
+        print("  DRONE  mode=" + str(drone.get("mode","?")) + "  batt=" + str(drone.get("battery","?")) + "%  alt=" + str(drone.get("alt","?")) + "m  spd=" + str(drone.get("groundspeed","?")) + "m/s  sat=" + str(drone.get("satellites","?")) + "  lat=" + str(drone.get("lat","?")) + "  lon=" + str(drone.get("lon","?")))
 
     hangar = status.get("hangar", {})
     if hangar.get("door"):
         alarms = hangar.get("alarms", [])
-        alm_str = " ALARMS:" + ",".join(alarms) if alarms else ""
-        print("  HANGAR door=" + str(hangar.get("door","?")) + "  lock=" + str(hangar.get("lock","?")) + "  temp=" + str(hangar.get("temperature","?")) + "C  hum=" + str(hangar.get("humidity","?")) + "%" + alm_str)
+        alm = " ALARMS:" + ",".join(alarms) if alarms else ""
+        print("  HANGAR door=" + str(hangar.get("door","?")) + "  lock=" + str(hangar.get("lock","?")) + "  temp=" + str(hangar.get("temperature","?")) + "C  hum=" + str(hangar.get("humidity","?")) + "%" + alm)
 
     try:
         with open("/proc/loadavg") as f:
@@ -218,7 +255,7 @@ def _print_status(app_state, config):
     except:
         pass
 
-    print("=" * 60)
+    print("=" * 70)
     sys.stdout.flush()
 
 def _fmt_uptime(sec):
