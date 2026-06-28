@@ -19,327 +19,323 @@ body{font:13px/1.5 Segoe UI,Microsoft YaHei,sans-serif;background:var(--bg);colo
 .hb-dot.bad{background:var(--red)}.hb-dot.bad::after{border:2px solid var(--red)}
 @keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(2.2);opacity:0}}
 #uptime-display{font-size:12px;color:var(--dim);font-family:monospace}
-nav{display:flex;padding:0 8px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;flex-wrap:wrap}
-nav button{padding:9px 12px;border:none;background:none;color:var(--dim);cursor:pointer;font-size:11px;border-bottom:2px solid transparent;white-space:nowrap}
+nav{display:flex;padding:0 20px;background:var(--panel);border-bottom:1px solid var(--border)}
+nav button{padding:10px 20px;border:none;background:none;color:var(--dim);cursor:pointer;font-size:13px;border-bottom:2px solid transparent}
 nav button:hover{color:var(--text)}
 nav button.active{color:var(--blue);border-bottom-color:var(--blue)}
 main{padding:16px;max-width:1500px;margin:0 auto}
 .tab{display:none}.tab.active{display:block}
-.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.grid3{grid-template-columns:repeat(2,1fr)}}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px}
 .card h3{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.card .val{font-size:28px;font-weight:600;font-family:monospace}
-.card .sub{font-size:11px;color:var(--dim);margin-top:4px}
-.card .fresh{font-size:10px;margin-top:4px;font-family:monospace}
-.card .fresh.live{color:var(--green)}.card .fresh.stale{color:var(--yellow)}.card .fresh.dead{color:var(--red)}
-.hcard{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px}
-.hcard .icon{font-size:24px}.hcard .info{flex:1}
-.hcard .label{font-size:11px;color:var(--dim)}
-.hcard .state{font-size:14px;font-weight:600}
-.hcard .state.on{color:var(--green)}.hcard .state.off{color:var(--red)}
-.hcard .since{font-size:10px;color:var(--dim);font-family:monospace;margin-top:2px}
-#toast-container{position:fixed;top:70px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-size:12px;max-width:400px;box-shadow:0 4px 12px rgba(0,0,0,0.4);animation:slideIn .3s;display:flex;align-items:flex-start;gap:8px}
-.toast.warn{border-left:3px solid var(--yellow)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--blue)}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-.toast .tmsg{flex:1}.toast .tclose{color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
-.event-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:monospace}
-.event-row .lev{padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;min-width:42px;text-align:center}
-.event-row .lev.info{background:#1a3a5c;color:var(--blue)}.event-row .lev.warn{background:#3d2e00;color:var(--yellow)}.event-row .lev.error{background:#3d1a1a;color:var(--red)}
-.event-row .ets{color:var(--dim);white-space:nowrap}.event-row .esrc{color:var(--blue);min-width:60px}.event-row .emsg{flex:1}
-.cfg-section{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
-.cfg-section h4{font-size:12px;color:var(--blue);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.cfg-row{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
-.cfg-row label{font-size:11px;color:var(--dim);min-width:70px}
-.cfg-row input,.cfg-row select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:4px;font-size:12px;font-family:monospace}
-.cfg-row input:focus,.cfg-row select:focus{outline:none;border-color:var(--blue)}
-.cfg-row input.t{min-width:180px}.cfg-row input.n{width:70px}
-.btn{background:var(--accent);color:white;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px}
-.btn:hover{opacity:0.85}.btn.small{padding:4px 10px;font-size:11px}.btn.danger{background:var(--red)}.btn.green{background:var(--green);color:#000}
-.prog-bar{height:8px;background:var(--border);border-radius:4px;margin:8px 0;overflow:hidden}
-.prog-bar .fill{height:100%;background:var(--blue);border-radius:4px;transition:width .3s}
-.gauge{display:flex;align-items:center;gap:12px;padding:6px 0}
-.gauge .bar{flex:1;height:20px;background:var(--border);border-radius:10px;overflow:hidden}
-.gauge .bar .fill{height:100%;border-radius:10px;transition:width .5s}
-.gauge .gval{font-family:monospace;font-size:14px;min-width:55px;text-align:right}
-.snap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.snap-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.snap-card img{width:100%;height:130px;object-fit:cover;display:block}
-.snap-card .sinfo{padding:6px 10px;font-size:10px;color:var(--dim)}
-.data-table{width:100%;border-collapse:collapse;font-size:12px}
-.data-table th,.data-table td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)}
-.data-table th{color:var(--dim);font-weight:600;font-size:10px;text-transform:uppercase}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.grid3{grid-template-columns:repeat(2,1fr)}}
+.conn-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px}
+.conn-card .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.conn-card .dot.healthy{background:var(--green)}.conn-card .dot.stale{background:var(--yellow)}.conn-card .dot.dead{background:var(--red)}
+.conn-card .cinfo{flex:1}
+.conn-card .cname{font-size:11px;color:var(--dim)}.conn-card .cstate{font-size:13px;font-weight:600}
+.conn-card .cage{font-size:10px;color:var(--dim);font-family:monospace}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.info-item{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px}
+.info-item .il{font-size:10px;color:var(--dim)}.info-item .iv{font-size:15px;font-weight:600;font-family:monospace}
 .badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
 .badge.green{background:#1a3d1a;color:var(--green)}.badge.yellow{background:#3d2e00;color:var(--yellow)}
 .badge.red{background:#3d1a1a;color:var(--red)}.badge.blue{background:#1a3a5c;color:var(--blue)}
-.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.btn{background:var(--accent);color:white;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn:hover{opacity:0.85}.btn.danger{background:var(--red)}.btn.green{background:var(--green);color:#000}
+.btn.small{padding:4px 10px;font-size:11px}
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .sec-header h3{font-size:13px;font-weight:600}
-.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
-.status-dot.live{background:var(--green)}.status-dot.dead{background:var(--red)}.status-dot.warn{background:var(--yellow)}
-.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-.info-item{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px}
-.info-item .ilabel{font-size:10px;color:var(--dim)}.info-item .ival{font-size:16px;font-weight:600;font-family:monospace}
-pre.log-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:11px;font-family:monospace;white-space:pre-wrap;max-height:500px;overflow-y:auto}
+.cfg-section{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
+.cfg-section h4{font-size:12px;color:var(--blue);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.cfg-row{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap;align-items:center}
+.cfg-row label{font-size:11px;color:var(--dim);min-width:65px}
+.cfg-row input,.cfg-row select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-size:11px;font-family:monospace}
+.cfg-row input.t{min-width:160px}.cfg-row input.n{width:65px}
+.gauge{display:flex;align-items:center;gap:8px;padding:4px 0}
+.gauge .bar{flex:1;height:16px;background:var(--border);border-radius:8px;overflow:hidden}
+.gauge .bar .fill{height:100%;border-radius:8px;transition:width .5s}
+.gauge .gv{font-family:monospace;font-size:12px;min-width:50px;text-align:right}
+.data-table{width:100%;border-collapse:collapse;font-size:11px}
+.data-table th,.data-table td{padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.data-table th{color:var(--dim);font-weight:600;font-size:10px}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;margin:6px 0;overflow:hidden}
+.prog-bar .fill{height:100%;background:var(--blue);border-radius:3px;transition:width .3s}
+.event-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;font-family:monospace}
+.event-row .elv{padding:0 4px;border-radius:2px;font-size:9px;font-weight:600;min-width:36px;text-align:center}
+.event-row .elv.info{background:#1a3a5c;color:var(--blue)}.event-row .elv.warn{background:#3d2e00;color:var(--yellow)}.event-row .elv.error{background:#3d1a1a;color:var(--red)}
+.event-row .ets{color:var(--dim);white-space:nowrap}.event-row .esrc{color:var(--blue);min-width:55px}.event-row .emsg{flex:1}
+pre.log-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;font-family:monospace;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+#toast-container{position:fixed;top:70px;right:20px;z-index:200;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;max-width:380px;box-shadow:0 4px 12px rgba(0,0,0,0.4);animation:slideIn .3s;display:flex;align-items:flex-start;gap:8px}
+.toast.warn{border-left:3px solid var(--yellow)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--blue)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast .tmsg{flex:1}.toast .tclose{color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
+.section-title{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px 0;padding-bottom:6px;border-bottom:1px solid var(--border)}
 </style>
 </head>
 <body>
+
 <div id="topbar">
-<div class="title"><div class="hb-dot ok" id="hb-dot"></div><h1>ANMK8639 <span>机库控制台</span></h1></div>
+<div class="title"><div class="hb-dot ok" id="hb-dot"></div><h1>ANMK8639 <span>Hangar Control</span></h1></div>
 <div id="uptime-display">--</div>
 </div>
+
 <nav>
-<button class="active" onclick="switchTab('status',this)">STATUS</button>
-<button onclick="switchTab('drone',this)">DRONE</button>
-<button onclick="switchTab('hangar',this)">HANGAR</button>
-<button onclick="switchTab('events',this)">EVENTS</button>
+<button class="active" onclick="switchTab('overview',this)">OVERVIEW</button>
 <button onclick="switchTab('config',this)">CONFIG</button>
-<button onclick="switchTab('cmd',this)">CMD</button>
+<button onclick="switchTab('control',this)">CONTROL</button>
 <button onclick="switchTab('logs',this)">LOGS</button>
-<button onclick="switchTab('system',this)">SYSTEM</button>
-<button onclick="switchTab('camera',this)">CAMERA</button>
-<button onclick="switchTab('upgrade',this)">UPGRADE</button>
-<button onclick="switchTab('decision',this)">RULES</button>
 </nav>
+
 <main>
-<div class="tab active" id="tab-status">
-<div class="grid4">
-<div class="card"><h3>MQTT</h3><div class="val" id="s-mqtt">--</div><div class="sub">地面站</div><div class="fresh dead" id="f-mqtt">--</div></div>
-<div class="card"><h3>MAVLink</h3><div class="val" id="s-mav">--</div><div class="sub">无人机</div><div class="fresh dead" id="f-mav">--</div></div>
-<div class="card"><h3>STM32</h3><div class="val" id="s-stm">--</div><div class="sub">下位机</div><div class="fresh dead" id="f-stm">--</div></div>
-<div class="card"><h3>Camera</h3><div class="val" id="s-cam">--</div><div class="sub">RTSP</div><div class="fresh dead" id="f-cam">--</div></div>
+<!-- ===== OVERVIEW ===== -->
+<div class="tab active" id="tab-overview">
+
+<div class="grid4" id="conn-cards">Loading...</div>
+
+<div class="section-title">Drone Telemetry</div>
+<div class="info-grid" id="drone-grid">--</div>
+
+<div class="section-title">Hangar Status</div>
+<div class="info-grid" id="hangar-grid">--</div>
+
+<div class="grid2" style="margin-top:12px">
+<div class="card"><h3>System Resources</h3>
+<div class="gauge"><div class="bar"><div class="fill" id="sys-cpu" style="width:0;background:var(--green)"></div></div><div class="gv" id="sys-cpu-v">--</div></div>
+<div class="gauge"><div class="bar"><div class="fill" id="sys-ram" style="width:0;background:var(--blue)"></div></div><div class="gv" id="sys-ram-v">--</div></div>
+<div class="gauge"><div class="bar"><div class="fill" id="sys-disk" style="width:0;background:var(--yellow)"></div></div><div class="gv" id="sys-disk-v">--</div></div>
+<div style="font-size:10px;color:var(--dim);margin-top:4px" id="sys-detail">--</div>
 </div>
-<div class="grid4" id="health-cards" style="margin-top:14px">Loading...</div>
+<div class="card"><h3>Recent Events</h3><div id="overview-events" style="max-height:200px;overflow-y:auto">--</div></div>
 </div>
 
-<div class="tab" id="tab-drone">
-<div class="sec-header"><h3>Drone Telemetry</h3><span class="badge blue" id="drone-mode">--</span></div>
-<div class="info-grid" id="drone-summary">Loading...</div>
-<div class="card" style="margin-top:14px"><h3>GPS Satellites</h3><div id="drone-gps">--</div></div>
-<div class="card" style="margin-top:14px"><h3>Flight Data</h3><table class="data-table"><thead><tr><th>Param</th><th>Value</th><th>Param</th><th>Value</th></tr></thead><tbody id="drone-detail"></tbody></table></div>
 </div>
 
-<div class="tab" id="tab-hangar">
-<div class="sec-header"><h3>Hangar Status</h3><span id="hangar-alarm-badge"></span></div>
-<div class="grid4" id="hangar-cards">Loading...</div>
-<div class="card" style="margin-top:14px"><h3>Sensors</h3><table class="data-table"><thead><tr><th>Sensor</th><th>Value</th><th>Status</th></tr></thead><tbody id="hangar-sensors"></tbody></table></div>
-</div>
-
-<div class="tab" id="tab-events">
-<div class="sec-header"><h3>Event Log</h3>
-<div><button class="btn small" onclick="filterEvents('all')" id="ef-all" style="background:var(--blue)">All</button>
-<button class="btn small" onclick="filterEvents('info')" id="ef-info">Info</button>
-<button class="btn small" onclick="filterEvents('warn')" id="ef-warn">Warn</button>
-<button class="btn small" onclick="filterEvents('error')" id="ef-error">Error</button></div>
-</div>
-<div id="events-list">Loading...</div>
-</div>
-
+<!-- ===== CONFIG ===== -->
 <div class="tab" id="tab-config">
-<div class="sec-header"><h3>System Config</h3><button class="btn green" onclick="saveConfig()">Save Config</button></div>
+<div class="sec-header"><h3>System Configuration</h3><button class="btn green" onclick="saveConfig()">Save Config</button></div>
 
-<div class="cfg-section"><h4>MQTT Ground Station</h4>
+<div class="cfg-section"><h4>MQTT</h4>
 <div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-mqtt-enabled" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Broker</label><input type="text" class="t" id="cfg-mqtt-broker" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mqtt-port" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Client ID</label><input type="text" class="t" id="cfg-mqtt-client_id" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Username</label><input type="text" class="t" id="cfg-mqtt-username" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Password</label><input type="password" class="t" id="cfg-mqtt-password" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Topic Prefix</label><input type="text" class="t" id="cfg-mqtt-topic_prefix" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Keepalive(s)</label><input type="number" class="n" id="cfg-mqtt-keepalive" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Status Int(s)</label><input type="number" class="n" id="cfg-mqtt-status_interval" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Topic</label><input type="text" class="t" id="cfg-mqtt-topic_prefix" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Keepalive</label><input type="number" class="n" id="cfg-mqtt-keepalive" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>QoS</label><select id="cfg-mqtt-qos" onchange="cfgChanged()"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select></div>
-<div class="cfg-row"><label>Reconn Min(s)</label><input type="number" class="n" id="cfg-mqtt-reconnect_min" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Reconn Max(s)</label><input type="number" class="n" id="cfg-mqtt-reconnect_max" onchange="cfgChanged()"></div>
 </div>
 
-<div class="cfg-section"><h4>MAVLink Drone</h4>
-<div class="cfg-row"><label>4G Module IP</label><input type="text" class="t" id="cfg-mavlink-host" onchange="cfgChanged()"></div>
+<div class="cfg-section"><h4>MAVLink</h4>
+<div class="cfg-row"><label>Host</label><input type="text" class="t" id="cfg-mavlink-host" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-mavlink-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>HB Timeout(s)</label><input type="number" class="n" id="cfg-mavlink-heartbeat_timeout" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>System ID</label><input type="number" class="n" id="cfg-mavlink-system_id" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Reconn Int(s)</label><input type="number" class="n" id="cfg-mavlink-reconnect_interval" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>HB Timeout</label><input type="number" class="n" id="cfg-mavlink-heartbeat_timeout" onchange="cfgChanged()"></div>
 </div>
 
-<div class="cfg-section"><h4>Camera RTSP</h4>
-<div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-camera-enabled" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>IP Address</label><input type="text" class="t" id="cfg-camera-ip" onchange="cfgChanged()" placeholder="10.6.3.57"></div>
+<div class="cfg-section"><h4>Camera</h4>
+<div class="cfg-row"><label>IP</label><input type="text" class="t" id="cfg-camera-ip" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-camera-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Username</label><input type="text" class="t" id="cfg-camera-username" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Password</label><input type="password" class="t" id="cfg-camera-password" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>User</label><input type="text" class="t" id="cfg-camera-username" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Pass</label><input type="password" class="t" id="cfg-camera-password" onchange="cfgChanged()"></div>
 <div class="cfg-row"><label>Channel</label><input type="number" class="n" id="cfg-camera-channel" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Stream</label><select id="cfg-camera-stream" onchange="cfgChanged()"><option value="0">0 Main</option><option value="1">1 Sub</option></select></div>
-<div class="cfg-row"><label>RTSP URL</label><input type="text" class="t" id="cfg-camera-rtsp_url" onchange="cfgChanged()" style="min-width:400px" placeholder="Override: leave blank to use structured fields"></div>
-<div class="cfg-row"><label>Snap Int(s)</label><input type="number" class="n" id="cfg-camera-snapshot_interval" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Snap Dir</label><input type="text" class="t" id="cfg-camera-snapshot_dir" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Snap Timeout(s)</label><input type="number" class="n" id="cfg-camera-snapshot_timeout" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>FFmpeg Extra</label><input type="text" class="t" id="cfg-camera-ffmpeg_extra" onchange="cfgChanged()" placeholder="-vf fps=1"></div>
+<div class="cfg-row"><label>RTSP URL</label><input type="text" class="t" id="cfg-camera-rtsp_url" onchange="cfgChanged()" style="min-width:300px" placeholder="Override (leave blank for auto)"></div>
 </div>
 
-<div class="cfg-section"><h4>STM32 Serial</h4>
+<div class="cfg-section"><h4>STM32</h4>
 <div class="cfg-row"><label>Device</label><input type="text" class="t" id="cfg-stm32-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Baudrate</label><input type="number" class="n" id="cfg-stm32-baudrate" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Data Bits</label><select id="cfg-stm32-data_bits" onchange="cfgChanged()"><option value="8">8</option><option value="7">7</option></select></div>
-<div class="cfg-row"><label>Parity</label><select id="cfg-stm32-parity" onchange="cfgChanged()"><option value="N">None</option><option value="E">Even</option><option value="O">Odd</option></select></div>
-<div class="cfg-row"><label>Stop Bits</label><select id="cfg-stm32-stop_bits" onchange="cfgChanged()"><option value="1">1</option><option value="2">2</option></select></div>
-<div class="cfg-row"><label>Cmd Timeout(s)</label><input type="number" class="n" id="cfg-stm32-cmd_timeout" onchange="cfgChanged()" step="0.1"></div>
-<div class="cfg-row"><label>Cmd Retry</label><input type="number" class="n" id="cfg-stm32-cmd_retry" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Status Int(s)</label><input type="number" class="n" id="cfg-stm32-status_interval" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Baud</label><input type="number" class="n" id="cfg-stm32-baudrate" onchange="cfgChanged()"></div>
 </div>
 
-<div class="cfg-section"><h4>Decision Engine</h4>
-<div class="cfg-row"><label>Auto Open on RTL</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Low Battery (%)</label><input type="number" class="n" id="cfg-decision-low_battery_threshold" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Lost Timeout(s)</label><input type="number" class="n" id="cfg-decision-lost_timeout" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>RTL Alt Thr(m)</label><input type="number" class="n" id="cfg-decision-rtl_alt_threshold" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Door Delay(s)</label><input type="number" class="n" id="cfg-decision-door_open_delay" onchange="cfgChanged()"></div>
+<div class="cfg-section"><h4>Decision</h4>
+<div class="cfg-row"><label>RTL Open</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Batt Low%</label><input type="number" class="n" id="cfg-decision-low_battery_threshold" onchange="cfgChanged()"></div>
+<div class="cfg-row"><label>Lost Timeout</label><input type="number" class="n" id="cfg-decision-lost_timeout" onchange="cfgChanged()"></div>
 </div>
 
-<div class="cfg-section"><h4>Watchdog</h4>
-<div class="cfg-row"><label>Enabled</label><input type="checkbox" id="cfg-watchdog-enabled" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Device</label><input type="text" class="t" id="cfg-watchdog-device" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Feed Int(s)</label><input type="number" class="n" id="cfg-watchdog-feed_interval" onchange="cfgChanged()"></div>
+<div id="cfg-save-status" style="margin-top:8px"></div>
 </div>
 
-<div class="cfg-section"><h4>Logging</h4>
-<div class="cfg-row"><label>Level</label><select id="cfg-log-level" onchange="cfgChanged()"><option value="DEBUG">DEBUG</option><option value="INFO">INFO</option><option value="WARNING">WARNING</option><option value="ERROR">ERROR</option></select></div>
-<div class="cfg-row"><label>Format</label><select id="cfg-log-format" onchange="cfgChanged()"><option value="text">text</option><option value="json">json</option></select></div>
-<div class="cfg-row"><label>Dir</label><input type="text" class="t" id="cfg-log-dir" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Max Days</label><input type="number" class="n" id="cfg-log-max_days" onchange="cfgChanged()"></div>
-</div>
+<!-- ===== CONTROL ===== -->
+<div class="tab" id="tab-control">
 
-<div class="cfg-section"><h4>Web UI</h4>
-<div class="cfg-row"><label>Host</label><input type="text" class="t" id="cfg-web_ui-host" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Port</label><input type="number" class="n" id="cfg-web_ui-port" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>API Key</label><input type="text" class="t" id="cfg-web_ui-api_key" onchange="cfgChanged()" placeholder="留空=无需认证"></div>
-<div class="cfg-row"><label>Health Refr(s)</label><input type="number" class="n" id="cfg-web_ui-health_refresh" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Alert Hist</label><input type="number" class="n" id="cfg-web_ui-alert_history" onchange="cfgChanged()"></div>
-</div>
-
-<div class="cfg-section"><h4>Upgrade IAP</h4>
-<div class="cfg-row"><label>Block Size</label><input type="number" class="n" id="cfg-upgrade-block_size" onchange="cfgChanged()"></div>
-<div class="cfg-row"><label>Block Timeout(s)</label><input type="number" class="n" id="cfg-upgrade-block_timeout" onchange="cfgChanged()" step="0.1"></div>
-<div class="cfg-row"><label>Auto Verify</label><input type="checkbox" id="cfg-upgrade-auto_verify" onchange="cfgChanged()"></div>
-</div>
-
-<div id="cfg-save-status" style="margin-top:10px"></div>
-</div>
-
-<div class="tab" id="tab-cmd">
-<div class="sec-header"><h3>STM32 Commands</h3></div>
-<div class="grid3">
-<div class="card" style="text-align:center"><h3>Door Control</h3>
-<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+<div class="section-title">STM32 Commands</div>
+<div class="grid4">
+<div class="card" style="text-align:center"><h3>Door</h3>
 <button class="btn green" onclick="sendCmd('OPEN_DOOR')">Open</button>
-<button class="btn danger" onclick="sendCmd('CLOSE_DOOR')">Close</button></div></div>
-<div class="card" style="text-align:center"><h3>Lock Control</h3>
-<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+<button class="btn danger" onclick="sendCmd('CLOSE_DOOR')">Close</button>
+</div>
+<div class="card" style="text-align:center"><h3>Lock</h3>
 <button class="btn" onclick="sendCmd('LOCK')">Lock</button>
-<button class="btn green" onclick="sendCmd('UNLOCK')">Unlock</button></div></div>
-<div class="card" style="text-align:center"><h3>System</h3>
-<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-<button class="btn small danger" onclick="restartService()">Restart</button></div></div>
+<button class="btn green" onclick="sendCmd('UNLOCK')">Unlock</button>
 </div>
-<div id="cmd-result" style="margin-top:10px"></div>
+<div class="card" style="text-align:center"><h3>Restart</h3>
+<button class="btn danger small" onclick="restartService()">Restart Svc</button>
+</div>
+<div class="card" style="text-align:center"><h3>Camera</h3>
+<button class="btn green small" onclick="captureSnapshot()">Capture</button>
+</div>
+</div>
+<div id="cmd-result" style="margin-top:6px;font-size:11px"></div>
+
+<div class="section-title">Firmware Upgrade (IAP)</div>
+<div class="card">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<span style="font-weight:600" id="upg-state-label">Idle</span>
+<div class="prog-bar" style="flex:1;min-width:120px"><div class="fill" id="upg-progress" style="width:0"></div></div>
+<input type="text" class="t" id="upg-path" placeholder="/path/to/firmware.bin" style="min-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-size:11px">
+<button class="btn green small" onclick="startUpgrade()">Start</button>
+<button class="btn danger small" onclick="cancelUpgrade()">Cancel</button>
+</div>
+<div id="upg-info" style="font-size:10px;color:var(--dim);margin-top:4px"></div>
 </div>
 
+<div class="section-title">Decision Rules</div>
+<div id="decision-rules" class="grid2">Loading...</div>
+
+</div>
+
+<!-- ===== LOGS ===== -->
 <div class="tab" id="tab-logs">
-<div class="sec-header"><h3>App Logs</h3><button class="btn small" onclick="loadLogs()">Refresh</button></div>
-<pre class="log-box" id="logs-content">Loading...</pre>
-</div>
-
-<div class="tab" id="tab-system">
-<div class="sec-header"><h3>System Resources</h3><span id="sys-time"></span></div>
 <div class="grid2">
-<div class="card"><h3>CPU</h3>
-<div class="gauge"><div class="bar"><div class="fill" id="sys-cpu-fill" style="width:0%;background:var(--green)"></div></div><div class="gval" id="sys-cpu-val">--</div></div>
-<div id="sys-cpu-load" style="font-size:10px;color:var(--dim)"></div></div>
-<div class="card"><h3>Memory</h3>
-<div class="gauge"><div class="bar"><div class="fill" id="sys-ram-fill" style="width:0%;background:var(--blue)"></div></div><div class="gval" id="sys-ram-val">--</div></div>
-<div id="sys-ram-detail" style="font-size:10px;color:var(--dim)"></div></div>
-<div class="card"><h3>Disk</h3>
-<div class="gauge"><div class="bar"><div class="fill" id="sys-disk-fill" style="width:0%;background:var(--yellow)"></div></div><div class="gval" id="sys-disk-val">--</div></div>
-<div id="sys-disk-detail" style="font-size:10px;color:var(--dim)"></div></div>
-<div class="card"><h3>Process</h3>
-<div id="sys-uptime" style="font-size:20px;font-weight:600;font-family:monospace">--</div>
-<div id="sys-pid" style="font-size:10px;color:var(--dim);margin-top:4px"></div></div>
+<div class="card"><h3>Event Log</h3>
+<div style="margin-bottom:6px">
+<button class="btn small" onclick="filterEvents('all')" id="ef-all" style="background:var(--blue)">All</button>
+<button class="btn small" onclick="filterEvents('info')" id="ef-info">Info</button>
+<button class="btn small" onclick="filterEvents('warn')" id="ef-warn">Warn</button>
+<button class="btn small" onclick="filterEvents('error')" id="ef-error">Error</button>
 </div>
+<div id="events-list" style="max-height:450px;overflow-y:auto">--</div>
 </div>
-
-<div class="tab" id="tab-camera">
-<div class="sec-header"><h3>Camera Snapshots</h3>
-<div><button class="btn small" onclick="loadSnapshots()">Refresh</button>
-<button class="btn small green" onclick="captureSnapshot()">Capture</button></div>
+<div class="card"><h3>App Logs</h3><button class="btn small" onclick="loadLogs()" style="margin-bottom:6px">Refresh</button>
+<pre class="log-box" id="logs-content">--</pre></div>
 </div>
-<div class="snap-grid" id="snap-grid">Loading...</div>
-</div>
-
-<div class="tab" id="tab-upgrade">
-<div class="sec-header"><h3>STM32 IAP Upgrade</h3></div>
-<div class="card"><h3>Upgrade Status</h3>
-<div style="font-size:16px;margin:10px 0" id="upg-state">Idle</div>
-<div class="prog-bar"><div class="fill" id="upg-progress" style="width:0%"></div></div>
-<div id="upg-info" style="font-size:11px;color:var(--dim)">--</div></div>
-<div class="card" style="margin-top:12px"><h3>Firmware Flash</h3>
-<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
-<input type="text" class="t" id="upg-path" placeholder="/path/to/firmware.bin" style="min-width:250px">
-<button class="btn green" onclick="startUpgrade()">Start Upgrade</button>
-<button class="btn danger small" onclick="cancelUpgrade()">Cancel</button></div>
-<div id="upg-result" style="margin-top:10px;font-size:11px"></div></div>
-</div>
-
-<div class="tab" id="tab-decision">
-<div class="sec-header"><h3>Decision Rules</h3><button class="btn small" onclick="loadDecisionRules()">Refresh</button></div>
-<div id="decision-rules">Loading...</div>
 </div>
 
 </main>
+
 <div id="toast-container"></div>
+
 <script>
-function switchTab(n,b){document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});document.getElementById('tab-'+n).classList.add('active');document.querySelectorAll('nav button').forEach(function(x){x.classList.remove('active')});if(b)b.classList.add('active');if(n==='drone')loadDrone();if(n==='hangar')loadHangar();if(n==='events')loadEvents();if(n==='config')loadConfigForm();if(n==='logs')loadLogs();if(n==='system')loadSystem();if(n==='camera')loadSnapshots();if(n==='upgrade')loadUpgradeStatus();if(n==='decision')loadDecisionRules()}
+function switchTab(n,b){document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});var el=document.getElementById('tab-'+n);if(el)el.classList.add('active');document.querySelectorAll('nav button').forEach(function(x){x.classList.remove('active')});if(b)b.classList.add('active');if(n==='overview'){loadOverview()}if(n==='config'){loadConfigForm()}if(n==='control'){loadUpgradeStatus();loadDecisionRules()}if(n==='logs'){loadEvents();loadLogs()}}
+
+// ===== TOAST =====
 var _tid=0;
-function showToast(m,l){l=l||'info';var c=document.getElementById('toast-container');var d=document.createElement('div');d.className='toast '+l;var s=document.createElement('span');s.className='tmsg';s.textContent=m;var x=document.createElement('span');x.className='tclose';x.textContent='x';x.style.cursor='pointer';x.onclick=function(){d.remove()};d.appendChild(s);d.appendChild(x);c.appendChild(d);var id=_tid++;setTimeout(function(){var el=document.getElementById('toast-'+id);return;},5000)}
+function showToast(m,l){l=l||'info';var c=document.getElementById('toast-container');var d=document.createElement('div');d.className='toast '+l;d.id='t-'+_tid;var s=document.createElement('span');s.className='tmsg';s.textContent=m;var x=document.createElement('span');x.className='tclose';x.textContent='\u00d7';x.style.cursor='pointer';x.onclick=function(){d.remove()};d.appendChild(s);d.appendChild(x);c.appendChild(d);var id=_tid++;setTimeout(function(){var e=document.getElementById('t-'+id);if(e)e.remove()},4000)}
+
+// ===== POLLING =====
 var _prevH='';
-function pollHealth(){fetch('/api/health').then(function(r){return r.json()}).then(function(h){var dot=document.getElementById('hb-dot');dot.className='hb-dot '+(h.overall==='healthy'?'ok':h.overall==='degraded'?'warn':'bad');var u=Math.floor(h.uptime||0);document.getElementById('uptime-display').textContent='RUN '+Math.floor(u/60)+'m '+Math.floor(u%60)+'s';var sc=['mqtt','mavlink','stm32','camera'];for(var i=0;i<sc.length;i++){var k=sc[i];var d=h[k]||{};var st=d.status||'dead';var labels={healthy:'OK',stale:'STALE',degraded:'DEGR',dead:'DOWN'};document.getElementById('s-'+k.substring(0,3)).textContent=labels[st]||'??';var f=document.getElementById('f-'+k.substring(0,3));var sec=d.last_hb_sec||d.last_msg_sec||d.last_status_sec||d.last_snapshot_sec;if(sec!=null){var ago=Math.floor(Date.now()/1000-sec);f.textContent=ago+'s ago';f.className='fresh '+(st==='healthy'?'live':st==='stale'?'stale':'dead')}else{f.textContent='--';f.className='fresh dead'}}var cards=[{k:'mavlink',icon:'SAT',label:'MAVLink'},{k:'mqtt',icon:'NET',label:'MQTT'},{k:'stm32',icon:'MCU',label:'STM32'},{k:'camera',icon:'CAM',label:'Camera'}];var hc=document.getElementById('health-cards');var ht='';for(var i=0;i<cards.length;i++){var c=cards[i];var d=h[c.k]||{};var st=d.status||'dead';var labels={healthy:'OK',stale:'STALE',degraded:'DEGR',dead:'DOWN'};var colors={healthy:'on',stale:'on',degraded:'off',dead:'off'};var sec=d.last_hb_sec||d.last_msg_sec||d.last_status_sec||d.last_snapshot_sec;var ago=sec!=null?Math.floor(Date.now()/1000-sec)+'s ago':'never';ht+='<div class="hcard"><div class="icon">'+c.icon+'</div><div class="info"><div class="label">'+c.label+'</div><div class="state '+colors[st]+'">'+labels[st]+'</div><div class="since">'+ago+'</div></div></div>'}hc.innerHTML=ht;var cur=JSON.stringify(h.overall);if(_prevH&&_prevH!==cur){var msg='';if(h.overall==='critical')msg='CRITICAL: System degraded!';else if(h.overall==='degraded')msg='WARNING: Partial connection loss';else msg='OK: System recovered';showToast(msg,h.overall==='healthy'?'info':h.overall==='degraded'?'warn':'error')}_prevH=cur}).catch(function(){})}
+function pollHealth(){fetch('/api/health').then(function(r){return r.json()}).then(function(h){
+var dot=document.getElementById('hb-dot');dot.className='hb-dot '+(h.overall==='healthy'?'ok':h.overall==='degraded'?'warn':'bad');
+var u=Math.floor(h.uptime||0);document.getElementById('uptime-display').textContent='RUN '+Math.floor(u/60)+'m '+Math.floor(u%60)+'s';
+
+// Connection cards
+var cons=[{k:'mavlink',n:'MAVLink',icon:'SAT'},{k:'mqtt',n:'MQTT',icon:'NET'},{k:'stm32',n:'STM32',icon:'MCU'},{k:'camera',n:'Camera',icon:'CAM'}];
+var ht='';
+for(var i=0;i<cons.length;i++){
+var c=cons[i];var d=h[c.k]||{};var st=d.status||'dead';
+var labels={healthy:'OK',stale:'STALE',dead:'DOWN'};
+var sec=d.last_hb_sec||d.last_msg_sec||d.last_status_sec||d.last_snapshot_sec;
+var ago=sec!==null&&sec!==undefined?Math.floor(Date.now()/1000-sec)+'s ago':'--';
+ht+='<div class="conn-card"><div class="dot '+st+'"></div><div class="cinfo"><div class="cname">'+c.n+'</div><div class="cstate">'+labels[st]+'</div><div class="cage">'+ago+'</div></div></div>';
+}
+document.getElementById('conn-cards').innerHTML=ht;
+var cur=h.overall||'';
+if(_prevH&&_prevH!==cur){
+var msgs={healthy:'System OK',degraded:'Warning: partial issue',critical:'Critical: check connections'};
+showToast(msgs[cur]||cur,cur==='healthy'?'info':cur==='degraded'?'warn':'error')}
+_prevH=cur}).catch(function(){})}
 setInterval(pollHealth,3000);pollHealth();
 
-function loadDrone(){fetch('/api/status').then(function(r){return r.json()}).then(function(s){var d=s.drone||{};var m=d.mode||'--';var alt=d.alt||'--';var gs=d.groundspeed||'--';var bat=d.battery||'--';var lat=d.lat||'--';var lon=d.lon||'--';var sat=d.satellites||'--';var hdg=d.heading||'--';var vs=d.vertical_speed||'--';var fix=d.fix_type||'--';var arm=d.armed?'ARMED':'DISARMED';document.getElementById('drone-mode').textContent=m;document.getElementById('drone-summary').innerHTML='<div class="info-item"><div class="ilabel">Mode</div><div class="ival">'+m+'</div></div><div class="info-item"><div class="ilabel">Alt(m)</div><div class="ival">'+alt+'</div></div><div class="info-item"><div class="ilabel">Speed(m/s)</div><div class="ival">'+gs+'</div></div><div class="info-item"><div class="ilabel">Batt(%)</div><div class="ival">'+bat+'</div></div><div class="info-item"><div class="ilabel">Sats</div><div class="ival">'+sat+'</div></div><div class="info-item"><div class="ilabel">State</div><div class="ival">'+arm+'</div></div>';document.getElementById('drone-gps').textContent='Lat: '+lat+' Lon: '+lon+' HDG: '+hdg+' Fix: '+fix;document.getElementById('drone-detail').innerHTML='<tr><td>V Speed</td><td>'+vs+' m/s</td><td>Heading</td><td>'+hdg+'</td></tr><tr><td>Fix</td><td>'+fix+'</td><td>Sats</td><td>'+sat+'</td></tr><tr><td>Lat</td><td>'+lat+'</td><td>Lon</td><td>'+lon+'</td></tr>'}).catch(function(){})}
-loadDrone();
+// ===== OVERVIEW =====
+function loadOverview(){
+fetch('/api/status').then(function(r){return r.json()}).then(function(s){
+var d=s.drone||{};var h=s.hangar||{};
+// Drone
+document.getElementById('drone-grid').innerHTML=
+'<div class="info-item"><div class="il">Mode</div><div class="iv">'+(d.mode||'--')+'</div></div>'+
+'<div class="info-item"><div class="il">Battery</div><div class="iv">'+(d.battery||'--')+'%</div></div>'+
+'<div class="info-item"><div class="il">Altitude</div><div class="iv">'+(d.alt||'--')+'m</div></div>'+
+'<div class="info-item"><div class="il">Speed</div><div class="iv">'+(d.groundspeed||'--')+'m/s</div></div>'+
+'<div class="info-item"><div class="il">Satellites</div><div class="iv">'+(d.satellites||'--')+'</div></div>'+
+'<div class="info-item"><div class="il">GPS</div><div class="iv" style="font-size:11px">'+(d.lat||'--')+','+(d.lon||'--')+'</div></div>'+
+'<div class="info-item"><div class="il">Fix</div><div class="iv">'+(d.fix_type||'--')+'</div></div>'+
+'<div class="info-item"><div class="il">Armed</div><div class="iv">'+(d.armed?'YES':'NO')+'</div></div>';
+// Hangar
+document.getElementById('hangar-grid').innerHTML=
+'<div class="info-item"><div class="il">Door</div><div class="iv">'+(h.door||'--')+'</div></div>'+
+'<div class="info-item"><div class="il">Lock</div><div class="iv">'+(h.lock||'--')+'</div></div>'+
+'<div class="info-item"><div class="il">Temp</div><div class="iv">'+(h.temperature||'--')+'\u00b0C</div></div>'+
+'<div class="info-item"><div class="il">Humidity</div><div class="iv">'+(h.humidity||'--')+'%</div></div>';
+}).catch(function(){});
 
-function loadHangar(){fetch('/api/status').then(function(r){return r.json()}).then(function(s){var h=s.hangar||{};document.getElementById('hangar-cards').innerHTML='<div class="card"><h3>Door</h3><div class="val">'+(h.door||'--')+'</div></div><div class="card"><h3>Lock</h3><div class="val">'+(h.lock||'--')+'</div></div><div class="card"><h3>Temp</h3><div class="val">'+(h.temperature||'--')+'C</div></div><div class="card"><h3>Humidity</h3><div class="val">'+(h.humidity||'--')+'%</div></div>';var al=h.alarms||[];document.getElementById('hangar-alarm-badge').innerHTML=al.length>0?'<span class="badge red">'+al.length+' ALARMS</span>':'<span class="badge green">OK</span>';document.getElementById('hangar-sensors').innerHTML='<tr><td>Temperature</td><td>'+(h.temperature||'--')+'C</td><td><span class="badge green">OK</span></td></tr><tr><td>Humidity</td><td>'+(h.humidity||'--')+'%</td><td><span class="badge green">OK</span></td></tr><tr><td>Door</td><td>'+(h.door||'--')+'</td><td><span class="badge '+(h.door==='OPEN'?'yellow':'green')+'">'+(h.door||'--')+'</span></td></tr><tr><td>Lock</td><td>'+(h.lock||'--')+'</td><td><span class="badge '+(h.lock==='LOCKED'?'green':'red')+'">'+(h.lock||'--')+'</span></td></tr>'}).catch(function(){})}
-loadHangar();
+// System
+fetch('/api/system').then(function(r){return r.json()}).then(function(s){
+var cp=s.cpu_percent||0;document.getElementById('sys-cpu').style.width=Math.min(cp,100)+'%';document.getElementById('sys-cpu-v').textContent=cp.toFixed(1)+'%';
+var rp=s.ram_percent||0;document.getElementById('sys-ram').style.width=rp+'%';document.getElementById('sys-ram-v').textContent=rp.toFixed(1)+'%';
+var dp=s.disk_percent||0;document.getElementById('sys-disk').style.width=dp+'%';document.getElementById('sys-disk-v').textContent=dp.toFixed(1)+'%';
+document.getElementById('sys-detail').textContent='Load: '+(s.load_avg||[]).join(' / ')+' | RAM: '+(s.ram_used||'--')+'/'+(s.ram_total||'--')+' | Disk: '+(s.disk_used||'--')+'/'+(s.disk_total||'--')+' | PID: '+(s.pid||'--');
+}).catch(function(){});
 
+// Events
+fetch('/api/events?count=8').then(function(r){return r.json()}).then(function(d){
+var evs=d.events||[];var ht='';
+for(var i=evs.length-1;i>=0;i--){var e=evs[i];var dt=new Date(e.ts*1000);var ts=dt.toTimeString().substring(0,8);
+ht+='<div class="event-row"><span class="elv '+e.level+'">'+e.level.toUpperCase()+'</span><span class="ets">'+ts+'</span><span class="esrc">'+e.source+'</span><span class="emsg">'+e.message+'</span></div>'}
+document.getElementById('overview-events').innerHTML=ht||'<div style="color:var(--dim);text-align:center;padding:10px">No events</div>';
+}).catch(function(){});
+}
+setInterval(function(){if(document.getElementById('tab-overview').classList.contains('active'))loadOverview()},5000);
+loadOverview();
+
+// ===== CONFIG =====
+function loadConfigForm(){fetch('/api/config').then(function(r){return r.json()}).then(function(cfg){
+var mq=cfg.mqtt||{};sv('cfg-mqtt-enabled',!!mq.enabled,'c');sv('cfg-mqtt-broker',mq.broker);sv('cfg-mqtt-port',mq.port,1883);sv('cfg-mqtt-client_id',mq.client_id);sv('cfg-mqtt-username',mq.username);sv('cfg-mqtt-password',mq.password);sv('cfg-mqtt-topic_prefix',mq.topic_prefix);sv('cfg-mqtt-keepalive',mq.keepalive,30);sv('cfg-mqtt-qos',mq.qos,1);
+var ml=cfg.mavlink||{};sv('cfg-mavlink-host',ml.host);sv('cfg-mavlink-port',ml.port,5760);sv('cfg-mavlink-heartbeat_timeout',ml.heartbeat_timeout,5);
+var cam=cfg.camera||{};sv('cfg-camera-ip',cam.ip,'10.6.3.57');sv('cfg-camera-port',cam.port,554);sv('cfg-camera-username',cam.username,'admin');sv('cfg-camera-password',cam.password);sv('cfg-camera-channel',cam.channel,1);sv('cfg-camera-rtsp_url',cam.rtsp_url);
+var st=cfg.stm32||{};sv('cfg-stm32-port',st.port,'/dev/ttyACM0');sv('cfg-stm32-baudrate',st.baudrate,115200);
+var dc=cfg.decision||{};sv('cfg-decision-auto_open_on_rtl',dc.auto_open_on_rtl!==false,'c');sv('cfg-decision-low_battery_threshold',dc.low_battery_threshold,20);sv('cfg-decision-lost_timeout',dc.lost_timeout,30);
+}).catch(function(e){showToast('Config load error: '+e.message,'error')})}
+function sv(id,val,def){var el=document.getElementById(id);if(!el)return;if(def==='c'){el.checked=!!val}else{el.value=val!==undefined&&val!==null?val:(def!==undefined?def:'')}}
+function cfgChanged(){document.getElementById('cfg-save-status').innerHTML='<span class="badge yellow">UNSAVED</span>'}
+function gv(id,def,type){var el=document.getElementById(id);if(!el)return def;if(type==='c')return el.checked;if(type==='i'){var v=parseInt(el.value);return isNaN(v)?def:v}if(type==='f'){var v=parseFloat(el.value);return isNaN(v)?def:v}return el.value||def}
+function saveConfig(){
+var cfg={
+mqtt:{enabled:gv('cfg-mqtt-enabled',false,'c'),broker:gv('cfg-mqtt-broker',''),port:gv('cfg-mqtt-port',1883,'i'),client_id:gv('cfg-mqtt-client_id',''),username:gv('cfg-mqtt-username',''),password:gv('cfg-mqtt-password',''),topic_prefix:gv('cfg-mqtt-topic_prefix','hangar/'),keepalive:gv('cfg-mqtt-keepalive',30,'i'),qos:gv('cfg-mqtt-qos',1,'i')},
+mavlink:{host:gv('cfg-mavlink-host',''),port:gv('cfg-mavlink-port',5760,'i'),heartbeat_timeout:gv('cfg-mavlink-heartbeat_timeout',5,'i')},
+camera:{enabled:true,ip:gv('cfg-camera-ip',''),port:gv('cfg-camera-port',554,'i'),username:gv('cfg-camera-username',''),password:gv('cfg-camera-password',''),channel:gv('cfg-camera-channel',1,'i'),rtsp_url:gv('cfg-camera-rtsp_url','')},
+stm32:{port:gv('cfg-stm32-port','/dev/ttyACM0'),baudrate:gv('cfg-stm32-baudrate',115200,'i')},
+decision:{auto_open_on_rtl:gv('cfg-decision-auto_open_on_rtl',true,'c'),low_battery_threshold:gv('cfg-decision-low_battery_threshold',20,'i'),lost_timeout:gv('cfg-decision-lost_timeout',30,'i')}
+};
+fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).then(function(r){return r.json()}).then(function(res){
+if(res.ok){document.getElementById('cfg-save-status').innerHTML='<span class="badge green">SAVED</span>';showToast('Saved. Run: hangar reload','info')}
+else{var det=res.details||[];document.getElementById('cfg-save-status').innerHTML='<span class="badge red">FAILED</span><br>'+det.map(function(d){return '- '+d}).join('<br>');showToast('Failed: '+res.error,'error')}
+}).catch(function(e){showToast('Error: '+e.message,'error')})}
+
+// ===== CONTROL =====
+function sendCmd(cmd){fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})}).then(function(r){return r.json()}).then(function(res){var el=document.getElementById('cmd-result');if(res.ok){el.innerHTML='<span class="badge green">OK: '+cmd+'</span>'}else{el.innerHTML='<span class="badge red">FAIL: '+res.error+'</span>'}}).catch(function(e){document.getElementById('cmd-result').innerHTML='<span class="badge red">'+e.message+'</span>'})}
+function restartService(){if(!confirm('Restart?'))return;fetch('/api/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json()}).then(function(res){showToast(res.msg||'OK','info')})}
+function captureSnapshot(){showToast('Capturing...','info');fetch('/api/camera/snapshot',{method:'POST'}).then(function(r){return r.json()}).then(function(res){showToast(res.ok?'Done: '+res.file:'Failed: '+res.error,res.ok?'info':'error')}).catch(function(e){showToast('Error: '+e.message,'error')})}
+
+// Upgrade
+function loadUpgradeStatus(){fetch('/api/upgrade/status').then(function(r){return r.json()}).then(function(s){document.getElementById('upg-state-label').textContent=(s.state||'idle').toUpperCase();document.getElementById('upg-progress').style.width=(s.progress||0)+'%';document.getElementById('upg-info').textContent=(s.info||'')+(s.error?' ERROR: '+s.error:'')}).catch(function(){})}
+function startUpgrade(){var p=document.getElementById('upg-path').value;if(!p){showToast('Enter path','warn');return}fetch('/api/upgrade/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(res){if(res.ok){showToast('Upgrade started','info')}else{showToast('Failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
+function cancelUpgrade(){fetch('/api/upgrade/cancel',{method:'POST'}).then(function(r){return r.json()}).then(function(res){showToast(res.ok?'Cancelled':'Failed','info')}).catch(function(){})}
+
+// Decision rules
+function loadDecisionRules(){fetch('/api/decision').then(function(r){return r.json()}).then(function(d){var rules=d.rules||[];var ht='';for(var i=0;i<rules.length;i++){var r=rules[i];ht+='<div class="card"><h3>'+r.name+'</h3><div style="font-size:10px;color:var(--dim)">'+r.description+'</div><span class="badge '+(r.enabled?'green':'red')+'">'+(r.enabled?'ON':'OFF')+'</span></div>'}document.getElementById('decision-rules').innerHTML=ht}).catch(function(){})}
+
+// ===== LOGS =====
 var _evtFilter='all';
 function filterEvents(l){_evtFilter=l;['all','info','warn','error'].forEach(function(k){var b=document.getElementById('ef-'+k);if(b)b.style.background=k===l?'var(--blue)':''});loadEvents()}
-function loadEvents(){fetch('/api/events?count=100').then(function(r){return r.json()}).then(function(d){var evs=d.events||[];var ht='';for(var i=evs.length-1;i>=0;i--){var e=evs[i];if(_evtFilter!=='all'&&e.level!==_evtFilter)continue;var dt=new Date(e.ts*1000);var ts=dt.toTimeString().substring(0,8);ht+='<div class="event-row"><span class="lev '+e.level+'">'+e.level.toUpperCase()+'</span><span class="ets">'+ts+'</span><span class="esrc">'+e.source+'</span><span class="emsg">'+e.message+'</span></div>'}document.getElementById('events-list').innerHTML=ht||'<div style="color:var(--dim);padding:20px;text-align:center">No events</div>'}).catch(function(){})}
-loadEvents();
+function loadEvents(){fetch('/api/events?count=100').then(function(r){return r.json()}).then(function(d){var evs=d.events||[];var ht='';for(var i=evs.length-1;i>=0;i--){var e=evs[i];if(_evtFilter!=='all'&&e.level!==_evtFilter)continue;var dt=new Date(e.ts*1000);var ts=dt.toTimeString().substring(0,8);ht+='<div class="event-row"><span class="elv '+e.level+'">'+e.level.toUpperCase()+'</span><span class="ets">'+ts+'</span><span class="esrc">'+e.source+'</span><span class="emsg">'+e.message+'</span></div>'}document.getElementById('events-list').innerHTML=ht||'<div style="color:var(--dim);text-align:center;padding:20px">No events</div>'}).catch(function(){})}
+function loadLogs(){fetch('/api/logs').then(function(r){return r.json()}).then(function(d){document.getElementById('logs-content').textContent=d.lines||'(empty)'}).catch(function(){});}
 
-function loadConfigForm(){fetch('/api/config').then(function(r){return r.json()}).then(function(cfg){var mq=cfg.mqtt||{};setVal('cfg-mqtt-enabled',!!mq.enabled,'check');setVal('cfg-mqtt-broker',mq.broker);setVal('cfg-mqtt-port',mq.port,1883);setVal('cfg-mqtt-client_id',mq.client_id,'hangar_001');setVal('cfg-mqtt-username',mq.username);setVal('cfg-mqtt-password',mq.password);setVal('cfg-mqtt-topic_prefix',mq.topic_prefix,'hangar/');setVal('cfg-mqtt-keepalive',mq.keepalive,30);setVal('cfg-mqtt-status_interval',mq.status_interval,5);setVal('cfg-mqtt-qos',mq.qos,1);setVal('cfg-mqtt-reconnect_min',mq.reconnect_min,2);setVal('cfg-mqtt-reconnect_max',mq.reconnect_max,60);var ml=cfg.mavlink||{};setVal('cfg-mavlink-host',ml.host);setVal('cfg-mavlink-port',ml.port,5760);setVal('cfg-mavlink-heartbeat_timeout',ml.heartbeat_timeout,5);setVal('cfg-mavlink-system_id',ml.system_id,255);setVal('cfg-mavlink-reconnect_interval',ml.reconnect_interval,3);var cam=cfg.camera||{};setVal('cfg-camera-enabled',cam.enabled!==false,'check');setVal('cfg-camera-ip',cam.ip,'10.6.3.57');setVal('cfg-camera-port',cam.port,554);setVal('cfg-camera-username',cam.username,'admin');setVal('cfg-camera-password',cam.password);setVal('cfg-camera-channel',cam.channel,1);setVal('cfg-camera-stream',cam.stream,0);setVal('cfg-camera-rtsp_url',cam.rtsp_url);setVal('cfg-camera-snapshot_interval',cam.snapshot_interval,30);setVal('cfg-camera-snapshot_dir',cam.snapshot_dir,'./data/snapshots');setVal('cfg-camera-snapshot_timeout',cam.snapshot_timeout,10);setVal('cfg-camera-ffmpeg_extra',cam.ffmpeg_extra);var st=cfg.stm32||{};setVal('cfg-stm32-port',st.port,'/dev/ttyACM0');setVal('cfg-stm32-baudrate',st.baudrate,115200);setVal('cfg-stm32-data_bits',st.data_bits,8);setVal('cfg-stm32-parity',st.parity,'N');setVal('cfg-stm32-stop_bits',st.stop_bits,1);setVal('cfg-stm32-cmd_timeout',st.cmd_timeout,0.5);setVal('cfg-stm32-cmd_retry',st.cmd_retry,3);setVal('cfg-stm32-status_interval',st.status_interval,1);var dc=cfg.decision||{};setVal('cfg-decision-auto_open_on_rtl',dc.auto_open_on_rtl!==false,'check');setVal('cfg-decision-low_battery_threshold',dc.low_battery_threshold,20);setVal('cfg-decision-lost_timeout',dc.lost_timeout,30);setVal('cfg-decision-rtl_alt_threshold',dc.rtl_alt_threshold,100);setVal('cfg-decision-door_open_delay',dc.door_open_delay,5);var wd=cfg.watchdog||{};setVal('cfg-watchdog-enabled',wd.enabled!==false,'check');setVal('cfg-watchdog-device',wd.device,'/dev/watchdog');setVal('cfg-watchdog-feed_interval',wd.feed_interval,30);var lg=cfg.log||{};setVal('cfg-log-level',lg.level,'INFO');setVal('cfg-log-format',lg.format,'text');setVal('cfg-log-dir',lg.dir,'./data/logs');setVal('cfg-log-max_days',lg.max_days,30);var wu=cfg.web_ui||{};setVal('cfg-web_ui-host',wu.host,'0.0.0.0');setVal('cfg-web_ui-port',wu.port,8080);setVal('cfg-web_ui-api_key',wu.api_key,'');setVal('cfg-web_ui-health_refresh',wu.health_refresh,3);setVal('cfg-web_ui-alert_history',wu.alert_history,100);var up=cfg.upgrade||{};setVal('cfg-upgrade-block_size',up.block_size,1024);setVal('cfg-upgrade-block_timeout',up.block_timeout,3.0);setVal('cfg-upgrade-auto_verify',up.auto_verify!==false,'check')}).catch(function(e){showToast('Load config failed: '+e.message,'error')})}
-function setVal(id,val,def){var el=document.getElementById(id);if(!el)return;if(def==='check'){el.checked=!!val}else if(el.tagName==='SELECT'){el.value=val!==undefined&&val!==null?String(val):String(def||'')}else{el.value=val!==undefined&&val!==null?val:(def!==undefined?def:'')}}
-function cfgChanged(){document.getElementById('cfg-save-status').innerHTML='<span class="badge yellow">UNSAVED</span>'}
-function getVal(id,def,type){var el=document.getElementById(id);if(!el)return def;if(type==='check')return el.checked;if(type==='int'){var v=parseInt(el.value);return isNaN(v)?def:v}if(type==='float'){var v=parseFloat(el.value);return isNaN(v)?def:v}return el.value||def}
-function saveConfig(){var cfg={mqtt:{enabled:getVal('cfg-mqtt-enabled',false,'check'),broker:getVal('cfg-mqtt-broker',''),port:getVal('cfg-mqtt-port',1883,'int'),client_id:getVal('cfg-mqtt-client_id','hangar_001'),username:getVal('cfg-mqtt-username',''),password:getVal('cfg-mqtt-password',''),topic_prefix:getVal('cfg-mqtt-topic_prefix','hangar/'),keepalive:getVal('cfg-mqtt-keepalive',30,'int'),status_interval:getVal('cfg-mqtt-status_interval',5,'int'),qos:getVal('cfg-mqtt-qos',1,'int'),reconnect_min:getVal('cfg-mqtt-reconnect_min',2,'int'),reconnect_max:getVal('cfg-mqtt-reconnect_max',60,'int')},mavlink:{host:getVal('cfg-mavlink-host',''),port:getVal('cfg-mavlink-port',5760,'int'),heartbeat_timeout:getVal('cfg-mavlink-heartbeat_timeout',5,'int'),system_id:getVal('cfg-mavlink-system_id',255,'int'),reconnect_interval:getVal('cfg-mavlink-reconnect_interval',3,'int')},camera:{enabled:getVal('cfg-camera-enabled',true,'check'),ip:getVal('cfg-camera-ip','10.6.3.57'),port:getVal('cfg-camera-port',554,'int'),username:getVal('cfg-camera-username','admin'),password:getVal('cfg-camera-password',''),channel:getVal('cfg-camera-channel',1,'int'),stream:getVal('cfg-camera-stream',0,'int'),rtsp_url:getVal('cfg-camera-rtsp_url',''),snapshot_interval:getVal('cfg-camera-snapshot_interval',30,'int'),snapshot_dir:getVal('cfg-camera-snapshot_dir','./data/snapshots'),snapshot_timeout:getVal('cfg-camera-snapshot_timeout',10,'int'),ffmpeg_extra:getVal('cfg-camera-ffmpeg_extra','')},stm32:{port:getVal('cfg-stm32-port','/dev/ttyACM0'),baudrate:getVal('cfg-stm32-baudrate',115200,'int'),data_bits:getVal('cfg-stm32-data_bits',8,'int'),parity:getVal('cfg-stm32-parity','N'),stop_bits:getVal('cfg-stm32-stop_bits',1,'int'),cmd_timeout:getVal('cfg-stm32-cmd_timeout',0.5,'float'),cmd_retry:getVal('cfg-stm32-cmd_retry',3,'int'),status_interval:getVal('cfg-stm32-status_interval',1,'int')},decision:{auto_open_on_rtl:getVal('cfg-decision-auto_open_on_rtl',true,'check'),low_battery_threshold:getVal('cfg-decision-low_battery_threshold',20,'int'),lost_timeout:getVal('cfg-decision-lost_timeout',30,'int'),rtl_alt_threshold:getVal('cfg-decision-rtl_alt_threshold',100,'int'),door_open_delay:getVal('cfg-decision-door_open_delay',5,'int')},watchdog:{enabled:getVal('cfg-watchdog-enabled',true,'check'),device:getVal('cfg-watchdog-device','/dev/watchdog'),feed_interval:getVal('cfg-watchdog-feed_interval',30,'int')},log:{level:getVal('cfg-log-level','INFO'),format:getVal('cfg-log-format','text'),dir:getVal('cfg-log-dir','./data/logs'),max_days:getVal('cfg-log-max_days',30,'int')},web_ui:{host:getVal('cfg-web_ui-host','0.0.0.0'),port:getVal('cfg-web_ui-port',8080,'int'),api_key:getVal('cfg-web_ui-api_key',''),health_refresh:getVal('cfg-web_ui-health_refresh',3,'int'),alert_history:getVal('cfg-web_ui-alert_history',100,'int')},upgrade:{block_size:getVal('cfg-upgrade-block_size',1024,'int'),block_timeout:getVal('cfg-upgrade-block_timeout',3.0,'float'),auto_verify:getVal('cfg-upgrade-auto_verify',true,'check')}};fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).then(function(r){return r.json()}).then(function(res){if(res.ok){document.getElementById('cfg-save-status').innerHTML='<span class="badge green">VALID & SAVED</span>';showToast('Config saved. Run: hangar reload','info')}else{var det=res.details||[];var msg='<span class="badge red">FAILED: '+res.error+'</span>';if(det.length>0){msg+='<br>'+det.map(function(d){return ' - '+d}).join('<br>')}document.getElementById('cfg-save-status').innerHTML=msg;showToast('Save failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
-
-function sendCmd(cmd){fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})}).then(function(r){return r.json()}).then(function(res){var el=document.getElementById('cmd-result');if(res.ok){el.innerHTML='<span class="badge green">OK: '+cmd+'</span>';showToast('Command sent: '+cmd,'info')}else{el.innerHTML='<span class="badge red">FAIL: '+res.error+'</span>';showToast('Failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
-function restartService(){if(!confirm('Restart service?'))return;fetch('/api/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json()}).then(function(res){showToast(res.msg||'Restart requested','info')})}
-
-function loadLogs(){fetch('/api/logs').then(function(r){return r.json()}).then(function(d){document.getElementById('logs-content').textContent=d.lines||'(empty)'}).catch(function(){})}
-loadLogs();
-
-function loadSystem(){fetch('/api/system').then(function(r){return r.json()}).then(function(s){document.getElementById('sys-cpu-fill').style.width=Math.min(s.cpu_percent||0,100)+'%';document.getElementById('sys-cpu-val').textContent=(s.cpu_percent||0).toFixed(1)+'%';document.getElementById('sys-cpu-load').textContent='Load: '+(s.load_avg||[]).join(' / ');var rp=s.ram_percent||0;document.getElementById('sys-ram-fill').style.width=rp+'%';document.getElementById('sys-ram-val').textContent=rp.toFixed(1)+'%';document.getElementById('sys-ram-detail').textContent=(s.ram_used||'--')+' / '+(s.ram_total||'--');var dp=s.disk_percent||0;document.getElementById('sys-disk-fill').style.width=dp+'%';document.getElementById('sys-disk-val').textContent=dp.toFixed(1)+'%';document.getElementById('sys-disk-detail').textContent=(s.disk_used||'--')+' / '+(s.disk_total||'--');var u=s.uptime||0;document.getElementById('sys-uptime').textContent=Math.floor(u/60)+'m '+Math.floor(u%60)+'s';document.getElementById('sys-pid').textContent='PID: '+(s.pid||'--');document.getElementById('sys-time').textContent=new Date().toLocaleTimeString()}).catch(function(){})}
-setInterval(function(){if(document.getElementById('tab-system').classList.contains('active'))loadSystem()},5000);
-
-function loadSnapshots(){fetch('/api/camera/snapshots').then(function(r){return r.json()}).then(function(d){var snaps=d.snapshots||[];var ht='';if(snaps.length===0){ht='<div style="color:var(--dim);padding:20px;text-align:center;grid-column:1/-1">No snapshots. Click Capture.</div>'}else{for(var i=0;i<snaps.length;i++){ht+='<div class="snap-card"><img src="/api/camera/snapshot/'+snaps[i].name+'" onerror="this.style.display=\\'none\\'"><div class="sinfo">'+snaps[i].time+' ('+snaps[i].size+')</div></div>'}}document.getElementById('snap-grid').innerHTML=ht}).catch(function(e){document.getElementById('snap-grid').innerHTML='<div style="color:var(--red)">'+e.message+'</div>'})}
-function captureSnapshot(){showToast('Capturing...','info');fetch('/api/camera/snapshot',{method:'POST'}).then(function(r){return r.json()}).then(function(res){if(res.ok){showToast('Snapshot saved: '+res.file,'info');loadSnapshots()}else{showToast('Failed: '+res.error,'error')}}).catch(function(e){showToast('Error: '+e.message,'error')})}
-
-function loadUpgradeStatus(){fetch('/api/upgrade/status').then(function(r){return r.json()}).then(function(s){var st=s.state||'idle';document.getElementById('upg-state').textContent=st.toUpperCase();document.getElementById('upg-progress').style.width=(s.progress||0)+'%';document.getElementById('upg-info').textContent=(s.info||'')+'  '+(s.error||'')}).catch(function(){})}
-setInterval(function(){if(document.getElementById('tab-upgrade').classList.contains('active'))loadUpgradeStatus()},2000);
-function startUpgrade(){var p=document.getElementById('upg-path').value;if(!p){showToast('Enter firmware path','warn');return}fetch('/api/upgrade/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:p})}).then(function(r){return r.json()}).then(function(res){if(res.ok){showToast('Upgrade started','info');loadUpgradeStatus()}else{showToast('Failed: '+res.error,'error');document.getElementById('upg-result').innerHTML='<span class="badge red">'+res.error+'</span>'}}).catch(function(e){showToast('Error: '+e.message,'error')})}
-function cancelUpgrade(){fetch('/api/upgrade/cancel',{method:'POST'}).then(function(r){return r.json()}).then(function(res){showToast(res.ok?'Cancelled':'Cancel failed','info');loadUpgradeStatus()}).catch(function(){})}
-
-function loadDecisionRules(){fetch('/api/decision').then(function(r){return r.json()}).then(function(d){var rules=d.rules||[];var ht='';var icons={DRONE_RTL:'SAT',DRONE_BATTERY_LOW:'BAT',DRONE_DISCONNECTED:'WIFI',HANGAR_ALARM:'ALM',MQTT_COMMAND:'NET'};for(var i=0;i<rules.length;i++){var r=rules[i];ht+='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">'+(icons[r.event]||'GEAR')+'</span><div><strong>'+r.name+'</strong><br><span style="font-size:10px;color:var(--dim)">Trigger: '+r.event+' | Action: '+r.action+'</span></div><span class="badge '+(r.enabled?'green':'red')+'" style="margin-left:auto">'+(r.enabled?'ENABLED':'DISABLED')+'</span></div><div style="margin-top:8px;font-size:11px;color:var(--dim)">'+r.description+'</div></div>'}document.getElementById('decision-rules').innerHTML=ht}).catch(function(){})}
+// ===== INIT =====
+pollHealth();
 </script>
 </body>
 </html>
