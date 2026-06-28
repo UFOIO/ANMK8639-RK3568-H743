@@ -14,6 +14,7 @@ from utils.logger import setup_logger
 from core.event_bus import EventBus
 from core.app_state import AppState
 from core.watchdog import Watchdog
+from core.terminal_ui import TerminalDashboard
 from modules.mqtt_client import MQTTClient
 from modules.mavlink_client import MAVLinkClient
 from modules.stm32_comm import STM32Comm
@@ -24,7 +25,6 @@ from modules.web_ui import WebUI
 
 logger = logging.getLogger(__name__)
 
-HEARTBEAT_CHARS = ["◷", "◶", "◵", "◴"]
 
 # 全局引用（信号处理器需要访问）
 _modules = []
@@ -119,6 +119,9 @@ def main():
     signal.signal(signal.SIGINT, on_terminate)
     signal.signal(signal.SIGHUP, on_reload)
 
+    # ===== 终端面板 =====
+    _tui = TerminalDashboard(_app_state, config)
+
     # ===== 主循环 =====
     tick = 0
     last_status = 0.0
@@ -127,25 +130,27 @@ def main():
             event_bus.poll(timeout=0.1)
             tick += 1
 
-            # 每 5 秒终端心跳
+            # 每 2 秒刷新终端面板
             now = time.time()
-            if now - last_status >= 5.0:
+            if now - last_status >= 2.0:
                 last_status = now
-                spin = HEARTBEAT_CHARS[(tick // 5) % len(HEARTBEAT_CHARS)]
-                health = _app_state.health()
-                overall = health["overall"]
-                icon = {"healthy": "●", "degraded": "◐", "critical": "○"}.get(overall, "?")
-                drone_ok = "🛸" if health["mavlink"]["connected"] else "  "
-                stm32_ok = "🔌" if health["stm32"]["connected"] else "  "
-                uptime_str = _fmt_uptime(_app_state.uptime)
-                logger.info(
-                    "%s [%s] %s%s | 运行 %s | Web :8080",
-                    spin, icon, drone_ok, stm32_ok, uptime_str
-                )
+                if _tui.enabled:
+                    _tui.refresh()
+                else:
+                    # 后台模式: 单行心跳日志
+                    health = _app_state.health()
+                    overall = health["overall"]
+                    icon = {"healthy": "●", "degraded": "◐", "critical": "○"}.get(overall, "?")
+                    uptime_str = _fmt_uptime(_app_state.uptime)
+                    logger.info(
+                        "%s [%s] | 运行 %s | Web :%d",
+                        icon, overall.upper(), uptime_str, config.get("web_ui", {}).get("port", 8080)
+                    )
     except KeyboardInterrupt:
         pass
 
     # ===== 清理 =====
+    _tui.stop()
     logger.info("Shutting down...")
     _app_state.log_event("system", "info", "机库控制系统关闭")
     for mod in reversed(_modules):
