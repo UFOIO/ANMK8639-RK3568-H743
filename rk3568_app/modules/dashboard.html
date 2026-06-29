@@ -209,6 +209,16 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       </div>
       <div class="cfg-row"><label>波特率</label><input id="cfg-stm32-baudrate" type="number" placeholder="115200"></div>
     </div>
+    <div class="cfg-section"><h3>VPN / Tailscale <button class="btn btn-blue btn-sm" onclick="saveSection('vpn')">[保存]</button> <span id="cfg-save-vpn"></span></h3>
+      <div class="cfg-row"><label>Tailscale Auth Key</label><input id="cfg-vpn-tailscale_auth_key" placeholder="tskey-auth-xxxxxxxx"></div>
+      <div class="cfg-row" style="font-size:11px;color:var(--dim)">在 tailscale.com 后台 Settings → Keys → Generate Auth Key</div>
+    </div>
+    <div class="cfg-section"><h3>认证设置 <button class="btn btn-blue btn-sm" onclick="saveSection('auth')">[保存]</button> <span id="cfg-save-auth"></span></h3>
+      <div class="cfg-row"><label>启用登录认证</label><input type="checkbox" id="cfg-auth-enabled"></div>
+      <div class="cfg-row"><label>用户名</label><input id="cfg-auth-username" placeholder="admin"></div>
+      <div class="cfg-row"><label>密码</label><div style="display:inline-flex;align-items:center;gap:6px"><input id="cfg-auth-password" type="password" placeholder="密码" style="flex:1"><button type="button" class="btn btn-outline btn-sm" onclick="var p=document.getElementById('cfg-auth-password');var b=this;if(p.type==='password'){p.type='text';b.textContent='隐'}else{p.type='password';b.textContent='显'}">显</button></div></div>
+      <div class="cfg-row"><label>会话超时(分钟)</label><input id="cfg-auth-session_timeout_min" type="number" placeholder="30"></div>
+    </div>
     <div class="cfg-section"><h3>决策引擎 <button class="btn btn-blue btn-sm" onclick="saveSection('decision')">[保存]</button> <span id="cfg-save-decision"></span></h3>
       <div class="cfg-row"><label>RTL自动开门</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl"></div>
       <div class="cfg-row"><label>低电量阈值(%)</label><input id="cfg-decision-low_battery_threshold" type="number" placeholder="20"></div>
@@ -429,7 +439,8 @@ function updateSystemBars(d) {
   var det = document.getElementById("sys-detail");
   if (det) {
     det.textContent = "内存 " + (d.system.ram_used || "--") + " / " + (d.system.ram_total || "--") +
-      " | 磁盘 " + (d.system.disk_used || "--") + " / " + (d.system.disk_total || "--");
+      " | 磁盘 " + (d.system.disk_used || "--") + " / " + (d.system.disk_total || "--") +
+      " | Broker " + (d.system.mosquitto ? "✅" : "❌");
   }
 }
 
@@ -572,6 +583,11 @@ function loadConfig() {
       setVal("cfg-decision-auto_open_on_rtl", (cfg.decision||{}).auto_open_on_rtl ? "true" : "false");
       setVal("cfg-decision-low_battery_threshold", (cfg.decision||{}).low_battery_threshold || 20);
       setVal("cfg-decision-lost_timeout", (cfg.decision||{}).lost_timeout || 30);
+  setVal("cfg-vpn-tailscale_auth_key", (cfg.vpn||{}).tailscale_auth_key || "");
+  setVal("cfg-auth-enabled", (cfg.auth||{}).enabled === true);
+  setVal("cfg-auth-username", (cfg.auth||{}).username || "admin");
+  setVal("cfg-auth-password", (cfg.auth||{}).password || "");
+  setVal("cfg-auth-session_timeout_min", (cfg.auth||{}).session_timeout_min || 30);
     })
     .catch(function(e) { console.log("Load config error:", e); });
 }
@@ -600,6 +616,8 @@ function saveConfig() {
   all.camera = {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")};
   all.stm32 = {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")};
   all.decision = {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")};
+all.vpn = {tailscale_auth_key: gv("cfg-vpn-tailscale_auth_key","")};
+all.auth = {enabled: gv("cfg-auth-enabled",false,"c"), username: gv("cfg-auth-username","admin"), password: gv("cfg-auth-password",""), session_timeout_min: gv("cfg-auth-session_timeout_min",30,"i")};
   fetch("/api/config", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(all)})
     .then(function(r) { return r.json(); })
     .then(function(res) {
@@ -637,6 +655,12 @@ function saveSection(section) {
     },
     stm32: function() {
       return {stm32: {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")}};
+    },
+    vpn: function() {
+      return {vpn: {tailscale_auth_key: gv("cfg-vpn-tailscale_auth_key","")}};
+    },
+    auth: function() {
+      return {auth: {enabled: gv("cfg-auth-enabled",false,"c"), username: gv("cfg-auth-username","admin"), password: gv("cfg-auth-password",""), session_timeout_min: gv("cfg-auth-session_timeout_min",30,"i")}};
     },
     decision: function() {
       return {decision: {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")}};

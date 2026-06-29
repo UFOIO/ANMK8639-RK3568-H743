@@ -1,0 +1,89 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ANMK8639 机库控制 — 登录</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  display: flex; justify-content: center; align-items: center; min-height: 100vh;
+}
+.login-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 40px 36px;
+  width: 380px;
+  max-width: 95vw;
+}
+.login-box h1 { font-size: 22px; margin-bottom: 8px; color: #f0f6fc; text-align: center; }
+.login-box .sub { font-size: 13px; color: #8b949e; text-align: center; margin-bottom: 28px; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 13px; color: #8b949e; margin-bottom: 6px; }
+.form-group input {
+  width: 100%; padding: 10px 12px; font-size: 15px;
+  background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+  color: #f0f6fc; outline: none;
+}
+.form-group input:focus { border-color: #58a6ff; }
+.btn {
+  width: 100%; padding: 11px; font-size: 15px; font-weight: 600;
+  background: #238636; color: #fff; border: none; border-radius: 6px;
+  cursor: pointer; margin-top: 8px;
+}
+.btn:hover { background: #2ea043; }
+.error { color: #f85149; font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; }
+.footer { text-align: center; font-size: 11px; color: #484f58; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="login-box">
+  <h1>ANMK8639 机库控制系统</h1>
+  <div class="sub">请输入账号密码登录</div>
+  <form id="loginForm">
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" id="username" autocomplete="username" required autofocus>
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <div style="position:relative">
+        <input type="password" id="password" autocomplete="current-password" required style="padding-right:44px">
+        <button type="button" id="togglePw" onclick="var p=document.getElementById('password');var b=document.getElementById('togglePw');if(p.type==='password'){p.type='text';b.textContent='隐'}else{p.type='password';b.textContent='显'}" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:1px solid #30363d;color:#8b949e;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px">显</button>
+      </div>
+    </div>
+    <button type="submit" class="btn">登 录</button>
+    <div id="error" class="error"></div>
+  </form>
+  <div class="footer">ANMK8639 Hangar Control System v1.0</div>
+</div>
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  var u = document.getElementById("username").value.trim();
+  var p = document.getElementById("password").value.trim();
+  var err = document.getElementById("error");
+  if (!u || !p) { err.textContent = "请输入用户名和密码"; return; }
+  err.textContent = "";
+  fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: u, password: p })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      window.location.href = "/";
+    } else {
+      err.textContent = d.error || "登录失败";
+    }
+  }).catch(function() {
+    err.textContent = "网络错误";
+  });
+});
+</script>
+</body>
+</html>

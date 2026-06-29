@@ -7,16 +7,17 @@ log:
 
 # ===== MQTT 地面站 =====
 mqtt:
-  enabled: false
-  broker: "请填写Broker地址"
+  # --- 连接本机 Mosquitto Broker (配合 Tailscale 实现全国通信) ---
+  enabled: false                        # 部署 Mosquitto 后改为 true
+  broker: "127.0.0.1"                   # 本机 Mosquitto
   port: 1883
   client_id: "hangar_001"
-  username: "admin"
-  password: "请填写密码"
+  username: "hangar"                    # mosquitto_passwd 创建的用户
+  password: "请填写mosquitto密码"
   keepalive: 30            # 心跳间隔(秒)
   status_interval: 5       # 状态上报间隔(秒)
   topic_prefix: "hangar/"  # MQTT主题前缀
-  qos: 1                   # 0|1|2
+  qos: 1                   # 默认QoS: 遥测=0, 状态=1, 告警=2
   reconnect_min: 2         # 重连最小间隔(秒)
   reconnect_max: 60        # 重连最大间隔(秒)
 
@@ -90,6 +91,17 @@ watchdog:
   enabled: true
   device: "/dev/watchdog"
   feed_interval: 30              # 喂狗间隔(秒)
+
+# ===== 认证 =====
+auth:
+  enabled: false                    # 是否开启登录认证
+  username: "admin"                 # 默认用户名
+  password: "admin123"              # 默认密码（首次登录后建议修改）
+  session_timeout_min: 30           # 会话超时(分钟)，关闭浏览器后超时需重登
+
+# ===== VPN / Tailscale =====
+vpn:
+  tailscale_auth_key: ""           # Tailscale Auth Key (客户在 tailscale.com 后台生成)
 
 # ===== Web 管理看板 =====
 web_ui:

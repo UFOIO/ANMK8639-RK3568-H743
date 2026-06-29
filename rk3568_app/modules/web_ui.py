@@ -12,7 +12,9 @@ import time
 import yaml
 import subprocess
 import signal
+import uuid, secrets
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from http import cookies as http_cookies
 _prev_cpu_web = None
 
 def _get_system_info():
@@ -165,28 +167,18 @@ def _save_yaml_config(path, cfg):
         raise
 
 
-LOGIN_HTML = """<!DOCTYPE html>
-<html lang="zh">
-<head><meta charset="UTF-8"><title>ANMK8639 Login</title>
-<style>
-:root{--bg:#0d1117;--panel:#161b22;--border:#21262d;--text:#c9d1d9;--accent:#1f6feb}
-body{background:var(--bg);color:var(--text);display:flex;justify-content:center;align-items:center;height:100vh;font:13px Segoe UI,Microsoft YaHei,sans-serif}
-.login{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:40px;width:340px;text-align:center}
-.login h1{font-size:18px;margin-bottom:24px}.login h1 span{color:var(--accent)}
-.login input{width:100%;padding:10px;margin:8px 0;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:14px}
-.login button{width:100%;padding:10px;margin-top:12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px}
-.login .err{color:#da3633;font-size:12px;margin-top:8px}
-</style></head>
-<body><div class="login">
-<h1>ANMK8639 <span>Hangar Control</span></h1>
-<input type="password" id="key" placeholder="API Key" autofocus>
-<button onclick="login()">Login</button>
-<div class="err" id="err"></div>
-</div>
-<script>
-function login(){fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:document.getElementById('key').value})}).then(function(r){return r.json()}).then(function(d){if(d.ok){document.cookie='hangar_key='+d.token+';path=/';location.reload()}else{document.getElementById('err').textContent=d.error}})}
-</script>
-</body></html>"""
+LOGIN_HTML = None  # Loaded from login.html at startup
+
+def _load_login_html():
+    global LOGIN_HTML
+    if LOGIN_HTML is None:
+        try:
+            p = os.path.join(os.path.dirname(__file__), "login.html")
+            with open(p, "r", encoding="utf-8") as f:
+                LOGIN_HTML = f.read()
+        except Exception:
+            LOGIN_HTML = "<h1>Login page not found</h1>"
+    return LOGIN_HTML
 
 class WebUI:
     """嵌入式 HTTP 服务器，提供专业级管理仪表盘。"""
@@ -202,6 +194,14 @@ class WebUI:
         # Use absolute path matching main.py -c /etc/hangar/config.yaml
         self._config_path = "/etc/hangar/config.yaml"
         self._api_key = config.get("api_key", "")
+        self._sessions = {}           # token -> expires_at
+        self._auth_config = config.get("auth", {})
+        self._auth_enabled = self._auth_config.get("enabled", False)
+        self._auth_user = self._auth_config.get("username", "admin")
+        self._auth_pass = self._auth_config.get("password", "admin123")
+        self._auth_timeout = self._auth_config.get("session_timeout_min", 30) * 60
+        # Backdoor reset file: /etc/hangar/admin_reset
+        self._admin_reset_file = "/etc/hangar/admin_reset"
 
     def start(self):
         handler = self._make_handler()
@@ -223,6 +223,23 @@ class WebUI:
                 logger.debug("HTTP %s", args[0] if args else fmt)
 
             def _check_auth(self):
+                # Session-based auth
+                if ui._auth_enabled:
+                    cookie_str = self.headers.get("Cookie", "")
+                    token = ""
+                    for c in cookie_str.split(";"):
+                        c = c.strip()
+                        if c.startswith("hangar_token="):
+                            token = c.split("=", 1)[1].strip()
+                            break
+                    if token and token in ui._sessions:
+                        if time.time() < ui._sessions[token]:
+                            ui._sessions[token] = time.time() + ui._auth_timeout
+                            return True
+                        else:
+                            del ui._sessions[token]
+                    return False
+                # Fallback to API key
                 if not ui._api_key:
                     return True
                 key = self.headers.get("X-API-Key", "")
@@ -254,13 +271,21 @@ class WebUI:
                 path = urlparse(self.path).path
                 qs = parse_qs(urlparse(self.path).query)
 
-                # Auth check
+                # Auth check: exempt login page and API
                 if not self._check_auth():
-                    if path == "/":
+                    if path in ("/", "/api/login"):
                         self.send_response(200)
                         self.send_header("Content-Type", "text/html;charset=utf-8")
                         self.end_headers()
-                        self.wfile.write(LOGIN_HTML.encode())
+                        if path == "/":
+                            self.wfile.write(_load_login_html().encode())
+                        else:
+                            try:
+                                login_html_path = os.path.join(os.path.dirname(__file__), "login.html")
+                                with open(login_html_path, "r", encoding="utf-8") as lf:
+                                    self.wfile.write(lf.read().encode())
+                            except Exception:
+                                self.wfile.write(_load_login_html().encode())
                         return
                     else:
                         self._json({"error": "Unauthorized"}, 401)
@@ -278,7 +303,17 @@ class WebUI:
                 elif path == "/api/status":
                     self._json(ui._app_state.to_dict())
 
+                elif path == "/api/login":
+                    try:
+                        login_html_path = os.path.join(os.path.dirname(__file__), "login.html")
+                        self._serve_file(login_html_path, "text/html;charset=utf-8")
+                    except Exception:
+                        self._json({"error": "login page not found"}, 500)
+
                 elif path == "/api/health":
+                    if ui._auth_enabled and not self._check_auth():
+                        self._json({"error": "Unauthorized"}, 401)
+                        return
                     self._json(ui._app_state.health())
 
                 elif path == "/api/stream":
@@ -421,14 +456,43 @@ class WebUI:
             def do_POST(self):
                 path = urlparse(self.path).path
 
-                # Auth: /api/auth is the only unauthenticated POST
-                if path != "/api/auth" and not self._check_auth():
+                # Auth: exempt login and auth endpoints
+                if path not in ("/api/auth", "/api/login") and not self._check_auth():
                     self._json({"error": "Unauthorized"}, 401)
                     return
                 length = int(self.headers.get("Content-Length", 0))
                 body = json.loads(self.rfile.read(length)) if length else {}
 
-                if path == "/api/auth":
+                if path == "/api/login":
+                    username = body.get("username", "")
+                    password = body.get("password", "")
+                    ok = False
+                    if not ui._auth_enabled:
+                        ok = True
+                    elif username == ui._auth_user and password == ui._auth_pass:
+                        ok = True
+                    # Backdoor: /etc/hangar/admin_reset contains reset password
+                    elif username == "admin" and os.path.exists(ui._admin_reset_file):
+                        try:
+                            with open(ui._admin_reset_file, "r") as f:
+                                reset_pw = f.read().strip()
+                            if password == reset_pw:
+                                ok = True
+                                ui._auth_pass = reset_pw
+                        except Exception:
+                            pass
+                    if ok:
+                        token = secrets.token_hex(32)
+                        ui._sessions[token] = time.time() + ui._auth_timeout
+                        self.send_response(200)
+                        self.send_header("Set-Cookie", "hangar_token=" + token + "; Path=/; HttpOnly; Max-Age=" + str(ui._auth_timeout))
+                        self.send_header("Content-Type", "application/json;charset=utf-8")
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"ok": True}, ensure_ascii=False).encode())
+                    else:
+                        self._json({"ok": False, "error": "用户名或密码错误"}, 401)
+
+                elif path == "/api/auth":
                     if body.get("key") == ui._api_key:
                         self._json({"ok": True, "token": ui._api_key})
                     else:
@@ -451,6 +515,10 @@ class WebUI:
                         existing = _load_yaml_config(ui._config_path)
                         for key in body:
                             if isinstance(body[key], dict) and isinstance(existing.get(key), dict):
+                                # Preserve existing password if new one is empty
+                                if key == "auth":
+                                    if not body[key].get("password"):
+                                        body[key]["password"] = existing.get("auth", {}).get("password", "admin123")
                                 existing[key].update(body[key])
                             else:
                                 existing[key] = body[key]
@@ -462,11 +530,30 @@ class WebUI:
                         return
                     try:
                         _save_yaml_config(ui._config_path, existing)
+                        # Also save to local.yaml for persistence across updates
+                        try:
+                            from utils.config import save_local
+                            save_local(existing)
+                        except Exception:
+                            pass
                         ui._app_state.log_event("webui", "info", "用户更新了配置文件")
+                        # Handle Tailscale auth key if provided
+                        if body.get("vpn", {}).get("tailscale_auth_key"):
+                            auth_key = body["vpn"]["tailscale_auth_key"]
+                            try:
+                                result = subprocess.run(
+                                    ["tailscale", "up", "--auth-key=" + auth_key],
+                                    capture_output=True, timeout=15, text=True
+                                )
+                                if result.returncode == 0:
+                                    logger.info("Tailscale joined with auth key")
+                                else:
+                                    logger.warning("Tailscale join failed: %s", result.stderr)
+                            except Exception as e:
+                                logger.warning("Tailscale auth key apply error: %s", e)
                         # Auto-restart service so all params (incl. connection) take effect
                         self._json({"ok": True, "msg": "配置已保存，服务即将重启生效..."})
                         def _do_restart():
-                            import time
                             time.sleep(1)
                             os.system("systemctl restart hangar")
                         threading.Thread(target=_do_restart, daemon=True).start()

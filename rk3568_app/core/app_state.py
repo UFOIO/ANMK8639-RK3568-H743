@@ -18,7 +18,8 @@ def _get_system_info():
     """??????: CPU(??/proc/stat)/RAM/Disk"""
     global _prev_cpu_fields
     info = {"cpu": 0, "ram_pct": 0, "ram_used": "0M", "ram_total": "0M",
-            "disk_pct": 0, "disk_used": "0G", "disk_total": "0G"}
+            "disk_pct": 0, "disk_used": "0G", "disk_total": "0G",
+            "mosquitto": False}
     try:
         with open("/proc/stat") as f:
             fields = [int(x) for x in f.readline().split()[1:8]]
@@ -59,6 +60,15 @@ def _get_system_info():
         info["disk_pct"] = round(used / total * 100, 1)
         info["disk_used"] = str(round(used / (1024**3), 1)) + "G"
         info["disk_total"] = str(round(total / (1024**3), 1)) + "G"
+    except Exception:
+        pass
+    # Mosquitto Broker 进程检测 (端口1883)
+    try:
+        with open("/proc/net/tcp", "r") as f:
+            for line in f:
+                if "00001D8B" in line:
+                    info["mosquitto"] = True
+                    break
     except Exception:
         pass
     return info

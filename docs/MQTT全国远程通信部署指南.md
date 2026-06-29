@@ -1,6 +1,7 @@
 ﻿# MQTT 全国远程通信部署指南
 
-> ANMK8639 机库控制系统 — 基于 Tailscale + Mosquitto 的零成本全国 MQTT 通信方案
+> ANMK8639 机库控制系统 — 基于 Tailscale + Mosquitto 的零成本全国 MQTT 通信方案  
+> 最后更新: 2026-06-29
 
 ---
 
@@ -29,7 +30,52 @@
 
 ---
 
-## 二、硬件 & 网络要求
+## 二、MQTT 增强功能
+
+### 2.1 LWT 遗嘱消息
+
+RK3568 断网/断电时，Mosquitto 自动向调度系统推送：
+
+```
+hangar/status → {"type":"status","payload":{"online":false}}  (retain)
+hangar/alarm  → {"type":"alarm","payload":{"level":"ERROR","code":"DEVICE_OFFLINE"}}
+```
+
+`retain=True` 确保新上线的调度系统立即可见设备离线状态。
+
+### 2.2 QoS 分级
+
+| Topic | QoS | 说明 |
+|-------|-----|------|
+| `hangar/drone/telemetry` | 0 | 遥测高频，丢几帧无影响 |
+| `hangar/status` | 1 | 状态上报，至少送达一次 |
+| `hangar/event` | 1 | 事件日志 |
+| `hangar/alarm` | **2** | 告警必须送达且不重复 |
+
+### 2.3 断联消息缓存
+
+调度系统离线期间的告警不会丢失：
+
+```conf
+# /etc/mosquitto/conf.d/hangar.conf
+max_queued_messages 1000   # 最多缓存 1000 条
+persistence true           # 重启 Mosquitto 也不丢
+```
+
+### 2.4 Broker 健康监控
+
+WebUI 系统资源卡片底部实时显示：
+
+```
+Broker ✅  (Mosquitto 运行中)
+Broker ❌  (Mosquitto 未运行)
+```
+
+通过检查 `/proc/net/tcp` 端口 1883 是否监听来判断。
+
+---
+
+## 三、硬件 & 网络要求
 
 | 设备 | 要求 |
 |------|------|
@@ -39,7 +85,7 @@
 
 ---
 
-## 三、Tailscale 账号注册
+## 四、Tailscale 账号注册
 
 > 在 **PC 浏览器** 操作，一次性。
 
@@ -54,15 +100,15 @@
 
 ---
 
-## 四、RK3568 部署步骤
+## 五、RK3568 部署步骤
 
-### 4.1 安装 Tailscale
+### 5.1 安装 Tailscale
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 ```
 
-### 4.2 加入网络
+### 5.2 加入网络
 
 ```bash
 sudo tailscale up
@@ -70,7 +116,7 @@ sudo tailscale up
 
 终端会输出一个 URL，复制到 PC 浏览器打开，点击 **Confirm**。
 
-### 4.3 验证
+### 5.3 验证
 
 ```bash
 tailscale status
@@ -78,43 +124,37 @@ tailscale status
 # 100.64.0.3  kickpi   linux  active
 ```
 
-### 4.4 安装 Mosquitto
+### 5.4 安装 Mosquitto
 
 ```bash
 sudo apt install mosquitto mosquitto-clients -y
 ```
 
-### 4.5 安全配置
+### 5.5 安全配置
 
 ```bash
 # 创建密码文件
 sudo mosquitto_passwd -c /etc/mosquitto/passwd hangar
 # 输入密码两次
 
-# 配置监听 + 认证
-sudo tee /etc/mosquitto/conf.d/hangar.conf << 'EOF'
-listener 1883 0.0.0.0
-password_file /etc/mosquitto/passwd
-allow_anonymous false
-EOF
-
-# 重启生效
+# 应用 Hangar 配置（持久化 + 离线缓存 + 监听所有网口）
+sudo cp /home/kickpi/rk3568_app/deploy/mosquitto-hangar.conf /etc/mosquitto/conf.d/hangar.conf
 sudo systemctl restart mosquitto
 ```
 
-### 4.6 修改 config.yaml
+### 5.6 修改 config.yaml
 
 ```yaml
 mqtt:
-  enabled: true
-  broker: "127.0.0.1"       # Hangar 连本机 Mosquitto
+  enabled: true                     # ← 改成 true
+  broker: "127.0.0.1"               # Hangar 连本机 Mosquitto
   port: 1883
   username: "hangar"
   password: "你的密码"
   topic_prefix: "hangar/"
 ```
 
-### 4.7 重启服务
+### 5.7 重启服务
 
 ```bash
 sudo systemctl restart hangar
@@ -123,9 +163,9 @@ hangar check   # 确认运行
 
 ---
 
-## 五、调度系统部署
+## 六、调度系统部署
 
-### 5.1 安装 Tailscale
+### 6.1 安装 Tailscale
 
 | 系统 | 方法 |
 |------|------|
@@ -133,21 +173,14 @@ hangar check   # 确认运行
 | Linux | `curl -fsSL https://tailscale.com/install.sh \| sh` |
 | macOS | App Store 搜 Tailscale |
 
-### 5.2 加入同一网络
+### 6.2 加入同一网络
 
 ```bash
 sudo tailscale up
 # 浏览器登录 同一个 Tailscale 账号 → Confirm
 ```
 
-### 5.3 获取虚拟 IP
-
-```bash
-tailscale status
-# 记下本机 IP，如 100.64.0.2
-```
-
-### 5.4 查看 RK3568 IP
+### 6.3 获取 RK3568 虚拟 IP
 
 ```bash
 tailscale status | grep kickpi
@@ -156,14 +189,14 @@ tailscale status | grep kickpi
 
 ---
 
-## 六、MQTT 连接配置（调度系统）
+## 七、MQTT 连接参数（调度系统）
 
 | 参数 | 值 |
 |------|----|
 | Broker 地址 | `100.64.0.3`（RK3568 的 Tailscale IP） |
 | 端口 | `1883` |
 | 用户名 | `hangar` |
-| 密码 | 步骤 4.5 设的密码 |
+| 密码 | 步骤 5.5 设的密码 |
 | Topic 前缀 | `hangar/` |
 
 ### 测试连通
@@ -175,20 +208,20 @@ mosquitto_sub -h 100.64.0.3 -p 1883 -u hangar -P 你的密码 -t "hangar/#" -v
 
 ---
 
-## 七、MQTT Topic 说明
+## 八、MQTT Topic 说明
 
-| Topic | 方向 | 说明 |
-|-------|------|------|
-| `hangar/telemetry` | RK3568 → 调度 | 遥测数据流 |
-| `hangar/alarm` | RK3568 → 调度 | 告警信息 |
-| `hangar/status` | RK3568 → 调度 | 系统状态 |
-| `hangar/event` | RK3568 → 调度 | 事件日志 |
-| `hangar/cmd` | 调度 → RK3568 | 远程指令 |
-| `hangar/config` | 调度 → RK3568 | 远程配置 |
+| Topic | 方向 | QoS | 说明 |
+|-------|------|-----|------|
+| `hangar/telemetry` | RK3568 → 调度 | 0 | 遥测数据流 |
+| `hangar/alarm` | RK3568 → 调度 | 2 | 告警信息（必达） |
+| `hangar/status` | RK3568 → 调度 | 1 | 系统状态 + LWT 遗嘱 |
+| `hangar/event` | RK3568 → 调度 | 1 | 事件日志 |
+| `hangar/command` | 调度 → RK3568 | 1 | 远程指令 |
+| `hangar/config/set` | 调度 → RK3568 | 1 | 远程配置 |
 
 ---
 
-## 八、常见问题
+## 九、常见问题
 
 | 问题 | 解决 |
 |------|------|
@@ -197,19 +230,8 @@ mosquitto_sub -h 100.64.0.3 -p 1883 -u hangar -P 你的密码 -t "hangar/#" -v
 | 忘记密码 | `sudo mosquitto_passwd /etc/mosquitto/passwd hangar` 重设 |
 | 设备离线 | `tailscale status` 查看在线状态 |
 | 4G 路由器 | 无需任何配置，能上网就行 |
-| Tailscale 到期 | 免费版永久，不会到期 |
-
----
-
-## 九、setup.sh 自动化（规划中）
-
-后续将在 `setup.sh` 中添加自动安装步骤：
-
-```bash
-# 未来一键安装将包含:
-# [X/Y] Install Mosquitto + Tailscale
-# [X/Y] Configure MQTT Broker
-```
+| Broker 显示 ❌ | `sudo systemctl restart mosquitto` |
+| 告警丢失 | 检查 QoS: hangar/alarm 必须 qos=2 |
 
 ---
 

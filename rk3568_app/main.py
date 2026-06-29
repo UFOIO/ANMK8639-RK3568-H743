@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 
-from utils.config import ConfigLoader
+from utils.config import load_config, ConfigLoader
 from utils.logger import setup_logger
 from core.event_bus import EventBus
 from core.app_state import AppState
@@ -41,7 +41,7 @@ def main():
     parser.add_argument("--nodaemon", action="store_true", help="前台运行（不写PID，日志到stdout）")
     args = parser.parse_args()
 
-    config = ConfigLoader(args.config)
+    config = load_config(args.config)
     setup_logger(config.log)
 
     # PID 文件 (systemd 管理时不写)
@@ -72,7 +72,9 @@ def main():
         dec_cfg.update(config.get("safety"))
     decision = DecisionEngine(dec_cfg, event_bus, _app_state)
     upgrade = UpgradeManager({}, stm32, event_bus)
-    web_ui = WebUI(config.get("web_ui", {}), _app_state, event_bus, stm32, upgrade_mgr=upgrade)
+    web_cfg = config.get("web_ui", {})
+    web_cfg["auth"] = config.get("auth", {})
+    web_ui = WebUI(web_cfg, _app_state, event_bus, stm32, upgrade_mgr=upgrade)
     watchdog = Watchdog(config.watchdog, event_bus)
 
     event_bus.subscribe("DECISION_ACTION", lambda d: _execute_action(d, mqtt, stm32))

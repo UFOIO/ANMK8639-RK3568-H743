@@ -50,6 +50,9 @@ class MQTTClient:
             "level": "ERROR", "code": "DEVICE_OFFLINE", "msg": "RK3568 disconnected"
         })
         self._client.will_set("hangar/alarm", will_msg, qos=1, retain=False)
+        # 同时声明设备离线状态 (retain=True 使调度系统立即可见)
+        offline_status = build_message("status", {"online": False})
+        self._client.will_set("hangar/status", offline_status, qos=1, retain=True)
 
         self._client.connect_async(self._broker, self._port, self._keepalive)
         self._client.loop_start()
@@ -89,7 +92,7 @@ class MQTTClient:
         msg = build_message("alarm", {
             "level": level, "code": code, "msg": msg_text, "data": data or {}
         })
-        self._client.publish("hangar/alarm", msg, qos=1)
+        self._client.publish("hangar/alarm", msg, qos=2)
 
     def publish_event(self, event_type: str, data=None):
         msg = build_message("event", {"event": event_type, "data": data or {}})
