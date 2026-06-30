@@ -1,0 +1,85 @@
+666: 
+667:             def _get_rtsp_url(self):
+668:                 """Build RTSP URL from config."""
+669:                 from utils.config import load_config_raw
+670:                 cfg = load_config_raw(ui._config_path)
+671:                 logger.info("[DEBUG _get_rtsp_url] config_path=%s cfg_keys=%s", ui._config_path, list(cfg.keys()))
+672:                 logger.info("[DEBUG _get_rtsp_url] camera keys=%s", list(cfg.get("camera", {}).keys()))
+673:                 logger.info("[DEBUG _get_rtsp_url] rtsp_url=%s", repr(cfg.get("camera", {}).get("rtsp_url", "")))
+674:                 cam = cfg.get("camera", {})
+675:                 rtsp_url = cam.get("rtsp_url", "")
+676:                 if not rtsp_url and cam.get("ip"):
+677:                     u = cam.get("username", "admin")
+678:                     p = cam.get("password", "")
+679:                     ip = cam.get("ip", "")
+680:                     port = cam.get("port", 554)
+681:                     ch = cam.get("channel", 1)
+682:                     rtsp_url = f"rtsp://{u}:{p}@{ip}:{port}/Streaming/Channels/{ch}01"
+683:                 return rtsp_url
+684: 
+685:             def _write_go2rtc_config(self):
+686:                 """Write go2rtc config YAML from camera RTSP settings."""
+687:                 rtsp_url = self._get_rtsp_url()
+688:                 logger.info("[DEBUG _write_go2rtc_config] rtsp_url=%s", repr(rtsp_url))
+689:                 if not rtsp_url:
+690:                     return None
+691:                 config_yaml = f"streams:\n  camera: {rtsp_url}\n"
+692:                 try:
+693:                     with open(ui._go2rtc_config, "w") as f:
+694:                         f.write(config_yaml)
+695:                     return rtsp_url
+696:                 except Exception as e:
+697:                     logger.error("go2rtc config write error: %s", e)
+698:                     return None
+699: 
+700:             def _ensure_go2rtc(self):
+701:                 """Ensure go2rtc is running; start if not."""
+702:                 import os
+703:                 if ui._go2rtc_proc is not None and ui._go2rtc_proc.poll() is None:
+704:                     return {"ok": True, "msg": "go2rtc already running", "urls": self._get_camera_urls()}
+705:                 if not os.path.exists(ui._go2rtc_bin):
+706:                     for alt in ["/tmp/go2rtc", "/home/kickpi/rk3568_app/go2rtc_linux_arm64"]:
+707:                         if os.path.exists(alt):
+708:                             ui._go2rtc_bin = alt
+709:                             break
+710:                     else:
+711:                         return {"ok": False, "error": "go2rtc binary not found"}
+712:                 # Remove stale yaml to avoid PermissionError
+713:                 try: os.remove(ui._go2rtc_config)
+714:                 except: pass
+715:                 rtsp = self._write_go2rtc_config()
+716:                 if not rtsp:
+717:                     return {"ok": False, "error": "RTSP URL not configured"}
+718:                 try:
+719:                     proc = subprocess.Popen(
+720:                         [ui._go2rtc_bin, "-config", ui._go2rtc_config],
+721:                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+722:                     )
+723:                     time.sleep(2)
+724:                     if proc.poll() is not None:
+725:                         return {"ok": False, "error": "go2rtc failed to start (process exited)"}
+726:                     ui._go2rtc_proc = proc
+727:                     return {"ok": True, "msg": "go2rtc started", "urls": self._get_camera_urls()}
+728:                 except Exception as e:
+729:                     return {"ok": False, "error": "go2rtc start error: " + str(e)}
+730: 
+731:             def _stop_go2rtc(self):
+732:                 """Stop go2rtc process."""
+733:                 if ui._go2rtc_proc is not None:
+734:                     try:
+735:                         ui._go2rtc_proc.terminate()
+736:                         ui._go2rtc_proc.wait(timeout=5)
+737:                     except:
+738:                         try:
+739:                             ui._go2rtc_proc.kill()
+740:                         except:
+741:                             pass
+742:                     ui._go2rtc_proc = None
+743:                 # Clean up yaml so next start doesn't get PermissionError
+744:                 try: os.remove(ui._go2rtc_config)
+745:                 except: pass
+746:                 return {"ok": True, "msg": "go2rtc stopped"}
+747: 
+748:             def _get_camera_urls(self):
+749:                 """Return camera stream URLs (local + Tailscale remote)."""
+750:                 import socket

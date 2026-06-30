@@ -144,7 +144,7 @@ class MAVLinkClient:
                 handler_fn = HANDLERS.get(msg.get_type())
                 if handler_fn:
                     handler_fn(self, msg)
-            except (socket.timeout, ConnectionError, OSError):
+            except (socket.timeout, ConnectionError, OSError, TypeError):
                 logger.warning("MAVLink connection lost")
                 self._mav = None
                 self._stream_active = False

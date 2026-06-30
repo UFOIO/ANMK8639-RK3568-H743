@@ -1,0 +1,32 @@
+=== Lines 780-810 (end of file) ===
+780: }
+781: 
+782: function checkRelayStatus() {
+783:     fetch("/api/camera/urls")
+784:         .then(function(r) { return r.json(); })
+785:         .then(function(urls) {
+786:             var btnStart = document.getElementById("relay-start-btn");
+787:             var btnStop = document.getElementById("relay-stop-btn");
+788:             var statusEl = document.getElementById("relay-status-text");
+789:             if (urls.running) {
+790:                 if (btnStart) btnStart.style.display = "none";
+791:                 if (btnStop) btnStop.style.display = "";
+792:                 if (statusEl) { statusEl.textContent = "状态：● 运行中"; statusEl.style.color = "var(--green)"; }
+793:                 if (!_camActive) updateRelayUI(urls);
+794:             } else {
+795:                 if (btnStart) { btnStart.style.display = ""; btnStart.disabled = false; }
+796:                 if (btnStop) btnStop.style.display = "none";
+797:                 if (statusEl) { statusEl.textContent = "状态：未启动"; statusEl.style.color = "var(--dim)"; } var rload2 = document.getElementById("relay-loading"); var rph2 = document.getElementById("relay-placeholder"); if (rload2) rload2.style.display = "none"; if (rph2) rph2.style.display = "flex";
+798:             }
+799:         })
+800:         .catch(function() {});
+801: }
+802: 
+803: pollHealth();setInterval(pollHealth,250);checkRelayStatus();
+804: setInterval(loadEvents, 5000);
+805: setInterval(loadLogs, 10000);
+806: loadConfig();
+807: loadDecisionRules();
+808: </script>
+809: </body>
+810: </html>

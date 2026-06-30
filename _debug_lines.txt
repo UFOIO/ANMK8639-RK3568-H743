@@ -1,0 +1,142 @@
+=== Lines 195-250 ===
+195:           <div class="cam-error-overlay" id="cam-error">
+196:             <div>
+197:               <div class="cam-error-msg" id="cam-error-msg">无法连接摄像头</div>
+198:               <div style="font-size:11px;color:var(--dim);margin-top:6px">请检查摄像头或切换模式</div>
+199:             </div>
+200:           </div>
+201:         </div>
+202:         <div class="cam-btns" style="margin-top:8px">
+203:           <button class="btn btn-green btn-sm" id="cam-start-btn" onclick="startCameraPreview()">启动预览</button>
+204:           <button class="btn btn-red btn-sm" id="cam-stop-btn" onclick="stopCameraPreview()" style="display:none">关闭预览</button>
+205:         </div>
+206:         <div style="margin-top:4px;font-size:11px;color:var(--dim)">
+207:           模式：<select id="cam-mode-select" onchange="switchCamMode()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);font-size:11px">
+208:             <option value="mjpeg" selected>MJPEG</option>
+209:             <option value="mse">MSE (HTML5)</option>
+210:             <option value="webrtc">WebRTC</option>
+211:           </select>
+212:           <span style="margin-left:8px">|</span>
+213:           <span id="cam-fps" style="color:var(--green)"></span>
+214:         </div>
+215:       </div>
+216:       <div class="cam-preview" style="text-align:left">
+217:         <div style="font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600">📪 远程/Tailscale</div>
+218:         <div id="relay-status-text" style="font-size:12px;color:var(--dim);margin-bottom:4px">状态：未启动</div>
+219:         <div id="relay-url-box" style="margin-bottom:8px">
+220:           <div style="font-size:11px;color:var(--dim);margin-bottom:2px">远程 MJPEG：</div>
+221:           <input id="relay-url-mjpeg" type="text" readonly style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--green);padding:4px 8px;border-radius:4px;font-size:11px;font-family:monospace;margin-bottom:4px" onclick="this.select()" value="">
+222:           <div style="font-size:11px;color:var(--dim);margin-bottom:2px">远程 MSE / WebRTC：</div>
+223:           <input id="relay-url-mse" type="text" readonly style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--green);padding:4px 8px;border-radius:4px;font-size:11px;font-family:monospace" onclick="this.select()" value="">
+224:           <div style="font-size:11px;color:var(--dim);margin-bottom:2px;margin-top:6px">远程画面：</div>
+225:           <div class="relay-video-box" id="relay-video-box">
+226:             <div class="relay-placeholder" id="relay-placeholder">启动代理后查看远程画面</div>
+227:             <img id="relay-preview-img" src="" style="display:none" onerror="this.style.display='none';var rph=document.getElementById('relay-placeholder');if(rph)rph.style.display='flex'">
+228:             <video id="relay-video-el" autoplay muted playsinline style="display:none" onplaying="var rl=document.getElementById('relay-loading');if(rl)rl.style.display='none'"></video>
+229:             <div class="cam-loading-overlay" id="relay-loading">
+230:               <div style="text-align:center">
+231:                 <div class="spinner"></div>
+232:                 <div style="color:var(--dim);font-size:11px;margin-top:8px">加载中...</div>
+233:               </div>
+234:             </div>
+235:           </div>
+236:         </div>
+237:         <div class="cam-btns" style="margin-top:6px">
+238:           <button class="btn btn-green btn-sm" id="relay-start-btn" onclick="startCameraRelay()">[启动代理]</button>
+239:           <button class="btn btn-red btn-sm" id="relay-stop-btn" onclick="stopCameraRelay()" style="display:none">[关闭代理]</button>
+240:         </div>
+241:       </div>
+242:     </div>
+243:   </div>
+244: <div class="panel">
+245:     <h2>>> 最近事件</h2>
+246:     <div id="overview-events"><span style="color:var(--dim)">暂无事件</span></div>
+247:   </div>
+248: </div>
+249: 
+250: <!-- ====== 配置 ====== -->
+
+=== Lines 790-872 ===
+790:                 if (btnStart) btnStart.style.display = "none";
+791:                 if (btnStop) btnStop.style.display = "";
+792:                 if (statusEl) { statusEl.textContent = "状态：● 运行中"; statusEl.style.color = "var(--green)"; }
+793:                 if (!_camActive) updateRelayUI(urls);
+794:             } else {
+795:                 if (btnStart) { btnStart.style.display = ""; btnStart.disabled = false; }
+796:                 if (btnStop) btnStop.style.display = "none";
+797:                 if (statusEl) { statusEl.textContent = "状态：未启动"; statusEl.style.color = "var(--dim)"; } var rload2 = document.getElementById("relay-loading"); var rph2 = document.getElementById("relay-placeholder"); if (rload2) rload2.style.display = "none"; if (rph2) rph2.style.display = "flex";
+798:             }
+799:         })
+800:         .catch(function() {});
+801: }
+802: 
+803: pollHealth();setInterval(pollHealth,250);checkRelayStatus();
+804: setInterval(loadEvents, 5000);
+805: setInterval(loadLogs, 10000);
+806: loadConfig();
+807: loadDecisionRules();
+808: </script>
+809: </body>
+810: </html>
+811: <div class="cam-preview">
+812:         <div style="font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600">Ⓢ 局域网预览 <span id="cam-mode-label">(MJPEG)</span></div>
+813:         <div class="cam-player" id="cam-player">
+814:           <div class="cam-placeholder" id="cam-placeholder">点击「启动预览」查看画面</div>
+815:           <img id="cam-preview-img" src="" style="display:none" onerror="_onCamImgError()">
+816:           <video id="cam-video-el" autoplay muted playsinline style="display:none" onplaying="_onCamPlaying()" onerror="_onCamError()"></video>
+817:           <div class="cam-loading-overlay" id="cam-loading">
+818:             <div style="text-align:center">
+819:               <div class="spinner"></div>
+820:               <div style="color:var(--dim);font-size:12px;margin-top:10px" id="cam-loading-text">正在连接摄像头...</div>
+821:             </div>
+822:           </div>
+823:           <div class="cam-error-overlay" id="cam-error">
+824:             <div>
+825:               <div class="cam-error-msg" id="cam-error-msg">无法连接摄像头</div>
+826:               <div style="font-size:11px;color:var(--dim);margin-top:6px">请检查摄像头或切换模式</div>
+827:             </div>
+828:           </div>
+829:         </div>
+830:         <div class="cam-btns" style="margin-top:8px">
+831:           <button class="btn btn-green btn-sm" id="cam-start-btn" onclick="startCameraPreview()">启动预览</button>
+832:           <button class="btn btn-red btn-sm" id="cam-stop-btn" onclick="stopCameraPreview()" style="display:none">关闭预览</button>
+833:         </div>
+834:         <div style="margin-top:4px;font-size:11px;color:var(--dim)">
+835:           模式：<select id="cam-mode-select" onchange="switchCamMode()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);font-size:11px">
+836:             <option value="mjpeg" selected>MJPEG</option>
+837:             <option value="mse">MSE (HTML5)</option>
+838:             <option value="webrtc">WebRTC</option>
+839:           </select>
+840:           <span style="margin-left:8px">|</span>
+841:           <span id="cam-fps" style="color:var(--green)"></span>
+842:         </div>
+843:       </div>
+844:       <div class="cam-preview" style="text-align:left">
+845:         <div style="font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600">📪 远程/Tailscale</div>
+846:         <div id="relay-status-text" style="font-size:12px;color:var(--dim);margin-bottom:4px">状态：未启动</div>
+847:         <div id="relay-url-box" style="margin-bottom:8px">
+848:           <div style="font-size:11px;color:var(--dim);margin-bottom:2px">远程 MJPEG：</div>
+849:           <input id="relay-url-mjpeg" type="text" readonly style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--green);padding:4px 8px;border-radius:4px;font-size:11px;font-family:monospace;margin-bottom:4px" onclick="this.select()" value="">
+850:           <div style="font-size:11px;color:var(--dim);margin-bottom:2px">远程 MSE / WebRTC：</div>
+851:           <input id="relay-url-mse" type="text" readonly style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--green);padding:4px 8px;border-radius:4px;font-size:11px;font-family:monospace" onclick="this.select()" value="">
+852:           <div style="font-size:11px;color:var(--dim);margin-bottom:2px;margin-top:6px">远程画面：</div>
+853:           <div class="relay-video-box" id="relay-video-box">
+854:             <div class="relay-placeholder" id="relay-placeholder">启动代理后查看远程画面</div>
+855:             <img id="relay-preview-img" src="" style="display:none" onerror="this.style.display='\'\'none\'\'';if(document.getElementById('relay-placeholder'))document.getElementById('relay-placeholder').style.display='\'\''\'\''">
+856:             <video id="relay-video-el" autoplay muted playsinline style="display:none" onplaying="if(document.getElementById('relay-loading'))document.getElementById('relay-loading').style.display='\'\'none\'\''"></video>
+857:             <div class="cam-loading-overlay" id="relay-loading">
+858:               <div style="text-align:center">
+859:                 <div class="spinner"></div>
+860:                 <div style="color:var(--dim);font-size:11px;margin-top:8px">加载中...</div>
+861:               </div>
+862:             </div>
+863:           </div>
+864:         </div>
+865:         <div class="cam-btns" style="margin-top:6px">
+866:           <button class="btn btn-green btn-sm" id="relay-start-btn" onclick="startCameraRelay()">[启动代理]</button>
+867:           <button class="btn btn-red btn-sm" id="relay-stop-btn" onclick="stopCameraRelay()" style="display:none">[关闭代理]</button>
+868:         </div>
+869:       </div>
+870:     </div>
+871:   </div>
+872: 

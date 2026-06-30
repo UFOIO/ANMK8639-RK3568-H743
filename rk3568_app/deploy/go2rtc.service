@@ -1,0 +1,16 @@
+[Unit]
+Description=go2rtc - RTSP to WebRTC/MSE/MJPEG streaming proxy
+After=network.target dnsmasq.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/go2rtc -config /etc/hangar/go2rtc.yaml
+ExecStop=/bin/kill -SIGTERM $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

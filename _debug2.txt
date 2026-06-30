@@ -1,0 +1,90 @@
+=== Lines 245-300 ===
+245:     <h2>>> 最近事件</h2>
+246:     <div id="overview-events"><span style="color:var(--dim)">暂无事件</span></div>
+247:   </div>
+248: </div>
+249: 
+250: <!-- ====== 配置 ====== -->
+251: <div class="tab" id="tab-config">
+252:   <div class="panel">
+253:     <h2>>> 系统配置 <button class="btn btn-blue" style="margin-left:auto" onclick="saveConfig()">[保存配置]</button> <span id="cfg-save-status"></span></h2>
+254:     <div class="cfg-section"><h3>MQTT 地面站 <button class="btn btn-blue btn-sm" onclick="saveSection('mqtt')">[保存]</button> <span id="cfg-save-mqtt"></span></h3>
+255:       <div class="cfg-row"><label>启用</label><input type="checkbox" id="cfg-mqtt-enabled"></div>
+256:       <div class="cfg-row"><label>Broker 地址</label><input id="cfg-mqtt-broker" placeholder="mqtt.example.com"></div>
+257:       <div class="cfg-row"><label>端口</label><input id="cfg-mqtt-port" type="number" placeholder="1883"></div>
+258:       <div class="cfg-row"><label>用户名</label><input id="cfg-mqtt-username" placeholder="admin"></div>
+259:       <div class="cfg-row"><label>密码</label><input id="cfg-mqtt-password" type="password" placeholder="密码"></div>
+260:       <div class="cfg-row"><label>Topic 前缀</label><input id="cfg-mqtt-topic_prefix" placeholder="hangar/"></div>
+261:     </div>
+262:     <div class="cfg-section"><h3>MAVLink 无人机 <button class="btn btn-blue btn-sm" onclick="saveSection('mavlink')">[保存]</button> <button class="btn btn-outline btn-sm" onclick="scanSerialPorts()" style="margin-left:4px">[刷新设备]</button> <span id="cfg-save-mavlink"></span></h3>
+263:       <div class="cfg-row"><label>连接方式</label><select id="cfg-mavlink-connection" onchange="onMavConnChange()"><option value="tcp">TCP (4G图传)</option><option value="serial">串口 (USB直连)</option></select></div>
+264:       <div id="mav-tcp-fields">
+265:         <div class="cfg-row"><label>4G模块IP</label><input id="cfg-mavlink-host" placeholder="192.168.x.x"></div>
+266:         <div class="cfg-row"><label>端口</label><input id="cfg-mavlink-port" type="number" placeholder="5760"></div>
+267:       </div>
+268:       <div id="mav-serial-fields" style="display:none">
+269:         <div class="cfg-row"><label>串口设备</label><select id="cfg-mavlink-device"><option value="/dev/ttyACM0">/dev/ttyACM0</option><option value="/dev/ttyACM1">/dev/ttyACM1</option><option value="/dev/ttyUSB0">/dev/ttyUSB0</option><option value="/dev/ttyUSB1">/dev/ttyUSB1</option></select></div>
+270:         <div class="cfg-row"><label>波特率</label><input id="cfg-mavlink-baudrate" type="number" placeholder="115200"></div>
+271:       </div>
+272:       <div class="cfg-row"><label>心跳超时(秒)</label><input id="cfg-mavlink-hb_timeout" type="number" placeholder="5"></div>
+273:       <div class="cfg-row"><label>遥测刷新率(Hz)</label><select id="cfg-mavlink-telem_rate"><option value="1">1 Hz</option><option value="2">2 Hz</option><option value="3">3 Hz</option><option value="4" selected>4 Hz (默认)</option><option value="6">6 Hz</option><option value="8">8 Hz</option><option value="10">10 Hz</option></select></div>
+274:     </div>
+275:     <div class="cfg-section"><h3>摄像头 RTSP <button class="btn btn-blue btn-sm" onclick="saveSection('camera')">[保存]</button> <span id="cfg-save-camera"></span></h3>
+276:       <div class="cfg-row"><label>IP 地址</label><input id="cfg-camera-ip" placeholder="10.6.3.57"></div>
+277:       <div class="cfg-row"><label>端口</label><input id="cfg-camera-port" type="number" placeholder="554"></div>
+278:       <div class="cfg-row"><label>用户名</label><input id="cfg-camera-username" placeholder="admin"></div>
+279:       <div class="cfg-row"><label>密码</label><input id="cfg-camera-password" type="password" placeholder="密码"></div>
+280:       <div class="cfg-row"><label>通道</label><input id="cfg-camera-channel" type="number" placeholder="1"></div>
+281:       <div class="cfg-row"><label>RTSP URL (直接填写)</label><input id="cfg-camera-rtsp_url" placeholder="rtsp://... (留空则用上方字段拼接)"></div>
+282:     </div>
+283:     <div class="cfg-section"><h3>STM32 串口 <button class="btn btn-blue btn-sm" onclick="saveSection('stm32')">[保存]</button> <button class="btn btn-outline btn-sm" onclick="scanSerialPorts()" style="margin-left:4px">[刷新设备]</button> <span id="cfg-save-stm32"></span></h3>
+284:       <div class="cfg-row"><label>串口设备</label>
+285:         <select id="cfg-stm32-device" onchange="onStmDeviceChange()">
+286:           <option value="/dev/ttyUSB0">/dev/ttyUSB0 (常用)</option>
+287:           <option value="/dev/ttyUSB1">/dev/ttyUSB1</option>
+288:           <option value="/dev/ttyACM0">/dev/ttyACM0 (MAVLink在用)</option>
+289:           <option value="/dev/ttyACM1">/dev/ttyACM1</option>
+290:           <option value="__other__">自定义路径...</option>
+291:         </select>
+292:         <input id="cfg-stm32-device-custom" placeholder="输入设备路径，如 /dev/ttyXXX" style="display:none;margin-top:4px">
+293:       </div>
+294:       <div class="cfg-row"><label>波特率</label><input id="cfg-stm32-baudrate" type="number" placeholder="115200"></div>
+295:     </div>
+296:     <div class="cfg-section"><h3>VPN / Tailscale <button class="btn btn-blue btn-sm" onclick="saveSection('vpn')">[保存]</button> <span id="cfg-save-vpn"></span></h3>
+297:       <div class="cfg-row"><label>Tailscale Auth Key</label><input id="cfg-vpn-tailscale_auth_key" placeholder="tskey-auth-xxxxxxxx"></div>
+298:       <div class="cfg-row" style="font-size:11px;color:var(--dim)">在 tailscale.com 后台 Settings → Keys → Generate Auth Key</div>
+299:     </div>
+300:     <div class="cfg-section"><h3>认证设置 <button class="btn btn-blue btn-sm" onclick="saveSection('auth')">[保存]</button> <span id="cfg-save-auth"></span></h3>
+
+=== Lines 380-410 ===
+380: function switchTab(id, btn) {
+381:   document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+382:   document.querySelectorAll("nav button").forEach(function(b) { b.classList.remove("active"); });
+383:   var tab = document.getElementById("tab-" + id);
+384:   if (tab) tab.classList.add("active");
+385:   if (btn) btn.classList.add("active");
+386:   // 切换到日志页时刷新
+387:   if (id === "logs") { loadEvents(); loadLogs(); }
+388:   if (id === "config") { loadConfig(); scanSerialPorts(); }
+389: }
+390: 
+391: // ====== 健康轮询 (每秒) ======
+392: function pollHealth(){fetch("/api/health").then(function(r){return r.json()}).then(function(d){APP=d;updateConnectionCards(d);updateOverview(d);updateSystemBars(d);updateRecentEvents(d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}).catch(function(e){})};setTimeout(pollHealth,250)
+393: 
+394: // ====== 连接状态卡片 ======
+395: var _MOD_NAMES = {mavlink:"MAVLink 无人机", mqtt:"MQTT 地面站", stm32:"STM32 下位机", camera:"摄像头"};
+396: var _MOD_LABEL = {mavlink:{k:"last_hb_sec",label:"心跳"}, mqtt:{k:"last_msg_sec",label:"消息"}, stm32:{k:"last_status_sec",label:"状态上报"}, camera:{k:"last_snapshot_sec",label:"截图"}};
+397: 
+398: function updateConnectionCards(d) {
+399:   var c = document.getElementById("conn-cards");
+400:   if (!c) return;
+401:   c.innerHTML = "";
+402:   ["mavlink","mqtt","stm32","camera"].forEach(function(k) {
+403:     var m = d[k] || {};
+404:     var card = h("div", "", "conn-card", c);
+405:     h("div", "", "dot " + (m.status || "dead"), card);
+406:     var info = h("div", "", "cinfo", card);
+407:     h("div", _MOD_NAMES[k] || k, "cname", info);
+408:     var stateText = m.status === "healthy" ? "正常" : m.status === "stale" ? "延迟" : "离线";
+409:     var stateEl = h("div", stateText, "cstate " + (m.status || "dead"), info);
+410:     var age = m[_MOD_LABEL[k].k];

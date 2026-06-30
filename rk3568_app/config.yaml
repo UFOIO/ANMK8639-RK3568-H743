@@ -1,4 +1,4 @@
-# ===== 日志 =====
+﻿# ===== 日志 =====
 log:
   level: INFO          # DEBUG | INFO | WARNING | ERROR
   format: "text"        # text | json  (json适合ELK/Loki日志系统)
@@ -47,24 +47,28 @@ stm32:
   status_interval: 1       # 主动上报间隔(秒)
 
 # ===== 摄像头 RTSP =====
+
+# ===== 摄像头 RTSP + go2rtc 流媒体代理 =====
 camera:
   enabled: true
-  # --- 方式1: 结构化配置 (推荐) ---
-  ip: "10.6.3.57"
+  # --- RTSP 源 (方式1: 直接URL, 方式2: 结构化字段拼接) ---
+  rtsp_url: "rtsp://10.6.3.110:554/user=admin&password=&channel=1&stream=0.sdp?"
+  # 以下结构字段在 rtsp_url 为空时使用
+  ip: "10.6.3.110"
   port: 554
   username: "admin"
   password: ""
   channel: 1
   stream: 0                # 0=主码流 1=子码流
-  # --- 方式2: 直接用RTSP URL (优先级更高) ---
-  rtsp_url: ""             # 留空则用结构化字段自动拼接
+  # --- go2rtc 流媒体代理 ---
+  go2rtc_enabled: true     # 启用 go2rtc (提供 MJPEG/MSE/WebRTC)
+  go2rtc_port: 1984        # go2rtc API 和流媒体端口
+  go2rtc_bin: "/usr/local/bin/go2rtc"
   # --- 抓图参数 ---
   snapshot_interval: 30    # 自动抓图间隔(秒), 0=禁用
   snapshot_dir: "./data/snapshots"
   snapshot_timeout: 10     # ffmpeg超时(秒)
-  ffmpeg_extra: ""         # ffmpeg额外参数, 如 "-vf fps=1"
 
-# ===== 断联保护 =====
 safety:
   # --- 机库坐标（必填，否则保护逻辑不触发） ---
   hangar_lat: 0.0             # 机库纬度

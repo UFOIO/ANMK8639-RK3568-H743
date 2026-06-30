@@ -1,0 +1,42 @@
+=== Lines 300-340 (auth + decision) ===
+300:     <div class="cfg-section"><h3>认证设置 <button class="btn btn-blue btn-sm" onclick="saveSection('auth')">[保存]</button> <span id="cfg-save-auth"></span></h3>
+301:       <div class="cfg-row"><label>启用登录认证</label><input type="checkbox" id="cfg-auth-enabled"></div>
+302:       <div class="cfg-row"><label>用户名</label><input id="cfg-auth-username" placeholder="admin"></div>
+303:       <div class="cfg-row"><label>密码</label><div style="display:inline-flex;align-items:center;gap:6px"><input id="cfg-auth-password" type="password" placeholder="密码" style="flex:1"><button type="button" class="btn btn-outline btn-sm" onclick="var p=document.getElementById('cfg-auth-password');var b=this;if(p.type==='password'){p.type='text';b.textContent='隐'}else{p.type='password';b.textContent='显'}">显</button></div></div>
+304:       <div class="cfg-row"><label>会话超时(分钟)</label><input id="cfg-auth-session_timeout_min" type="number" placeholder="30"></div>
+305:     </div>
+306:     <div class="cfg-section"><h3>决策引擎 <button class="btn btn-blue btn-sm" onclick="saveSection('decision')">[保存]</button> <span id="cfg-save-decision"></span></h3>
+307:       <div class="cfg-row"><label>RTL自动开门</label><input type="checkbox" id="cfg-decision-auto_open_on_rtl"></div>
+308:       <div class="cfg-row"><label>低电量阈值(%)</label><input id="cfg-decision-low_battery_threshold" type="number" placeholder="20"></div>
+309:       <div class="cfg-row"><label>失联超时(秒)</label><input id="cfg-decision-lost_timeout" type="number" placeholder="30"></div>
+310:     </div>
+311:   </div>
+312: </div>
+313: 
+314: <!-- ====== 控制 ====== -->
+315: <div class="tab" id="tab-control">
+316:   <div class="panel"><h2>>> 舱门控制</h2>
+317:     <div class="cmd-grid">
+318:       <button class="btn btn-green" onclick="sendCmd('OPEN_DOOR')">开门</button>
+319:       <button class="btn btn-red" onclick="sendCmd('CLOSE_DOOR')">关门</button>
+320:       <button class="btn btn-outline" onclick="sendCmd('LOCK')">上锁</button>
+321:       <button class="btn btn-outline" onclick="sendCmd('UNLOCK')">解锁</button>
+322:     </div>
+323:     <div id="cmd-result"></div>
+324:   </div>
+325:   <div class="panel"><h2>>> 系统操作</h2>
+326:     <div class="cmd-grid">
+327:       <button class="btn btn-blue" onclick="captureSnapshot()">[手动截图]</button>
+328:       <button class="btn btn-red" onclick="restartService()">[重启服务]</button> <button class="btn btn-red" onclick="rebootDevice()">[重启终端]</button>
+329:     </div>
+330:   </div>
+331:   <div class="panel"><h2>>> 决策规则</h2><div id="decision-rules" style="color:var(--dim)">从配置加载...</div></div>
+332: </div>
+333: 
+334: <!-- ====== 日志 ====== -->
+335: <div class="tab" id="tab-logs">
+336:   <div class="panel">
+337:     <h2>>> 事件日志</h2>
+338:     <div class="event-filters">
+339:       <button id="ef-all" class="on" onclick="filterEvents('all')">全部</button>
+340:       <button id="ef-info" onclick="filterEvents('info')">信息</button>

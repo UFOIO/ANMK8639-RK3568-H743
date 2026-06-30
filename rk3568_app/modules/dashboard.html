@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -123,6 +123,26 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 .badge.green{background:var(--green);color:#000}
 .badge.red{background:var(--red);color:#fff}
 .badge.yellow{background:var(--yellow);color:#000}
+/* camera player */
+.cam-player{position:relative;width:100%;min-height:240px;background:#000;border-radius:6px;border:1px solid var(--border)}
+.cam-player .cam-placeholder{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px}
+.cam-player .cam-loading-overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;gap:8px;background:rgba(0,0,0,0.7);z-index:2;color:var(--white);font-size:13px}
+.cam-player .cam-error-overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);z-index:3}
+.cam-player .cam-error-overlay .cam-error-msg{color:var(--red);font-size:12px;max-width:80%%}
+/* relay video area */
+.relay-video-box{position:relative;width:100%%;min-height:240px;background:#000;border-radius:6px;border:1px solid var(--border)}
+.relay-video-box .relay-placeholder{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px}
+.relay-video-box .cam-loading-overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;gap:8px;background:rgba(0,0,0,0.7);z-index:2;color:var(--white);font-size:13px}
+.relay-video-box .cam-error-overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);z-index:3}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-red{background:var(--red);color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px}
+.toast{position:fixed;top:20px;right:20px;z-index:9999;padding:10px 20px;border-radius:6px;color:#fff;font-size:13px;animation:fadeIn 0.3s}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+.toast.info{background:var(--blue)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
 </style>
 </head>
 <body>
@@ -160,6 +180,44 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
   <div class="panel">
     <h2>>> 最近事件</h2>
     <div id="overview-events"><span style="color:var(--dim)">暂无事件</span></div>
+  </div>
+
+  <div class="grid-2" style="margin-top:16px">
+    <div class="panel">
+      <h2>>> 局域网预览
+        <select id="cam-mode-select" onchange="switchCamMode()" style="margin:0 8px;padding:2px 6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:12px">
+          <option value="webrtc" selected>WebRTC</option>
+          <option value="mjpeg">MJPEG</option>
+        </select>
+        <button class="btn btn-blue btn-sm" id="cam-start-btn" onclick="startCameraPreview()">[启动摄像头]</button>
+        <button class="btn btn-red btn-sm" id="cam-stop-btn" onclick="stopCameraPreview()" style="display:none">[停止]</button>
+        <span id="cam-status" style="font-size:12px;margin-left:8px"></span>
+      </h2>
+      <div class="cam-player" id="cam-player">
+        <video id="cam-video-el" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:none" muted playsinline autoplay></video>
+        <iframe id="cam-iframe" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;display:none" allow="autoplay;camera;microphone"></iframe>
+        <div class="cam-placeholder" id="cam-placeholder">点击 [启动摄像头] 查看画面</div>
+        <div class="cam-loading-overlay" id="cam-loading"><span class="spinner"></span><span id="cam-loading-text">正在连接...</span></div>
+        <div class="cam-error-overlay" id="cam-error"><span class="cam-error-msg" id="cam-error-msg"></span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>>> 远程代理
+        <button class="btn btn-blue btn-sm" id="relay-start-btn" onclick="startCameraRelay()">[启动代理]</button>
+        <button class="btn btn-red btn-sm" id="relay-stop-btn" onclick="stopCameraRelay()" style="display:none">[停止]</button>
+        <span id="relay-status-text" style="font-size:12px;margin-left:8px;color:var(--dim)">未启动</span>
+      </h2>
+      <div class="relay-video-box" id="relay-player">
+        <iframe id="relay-iframe" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;display:none" allow="autoplay;camera;microphone"></iframe>
+        <div class="relay-placeholder" id="relay-placeholder">点击 [启动代理] 查看远程画面</div>
+        <div class="cam-loading-overlay" id="relay-loading"><span class="spinner"></span> 启动中...</div>
+        <div class="cam-error-overlay" id="relay-error"><span class="cam-error-msg" id="relay-error-msg"></span></div>
+      </div>
+      <div id="relay-url-box" style="display:none;margin-top:8px">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:2px">远程 MSE / WebRTC：</div>
+        <input id="relay-url-mse" type="text" readonly style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--blue);padding:4px 8px;border-radius:4px;font-size:11px;font-family:monospace" onclick="this.select()">
+      </div>
+    </div>
   </div>
 </div>
 
@@ -619,7 +677,7 @@ function saveConfig() {
 all.vpn = {tailscale_auth_key: gv("cfg-vpn-tailscale_auth_key","")};
 all.auth = {enabled: gv("cfg-auth-enabled",false,"c"), username: gv("cfg-auth-username","admin"), password: gv("cfg-auth-password",""), session_timeout_min: gv("cfg-auth-session_timeout_min",30,"i")};
   fetch("/api/config", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(all)})
-    .then(function(r) { return r.json(); })
+    .then(function(r) { if(r.status===401){showToast("登录已过期，请刷新重新登录","error");return Promise.reject("unauth");} return r.json(); })
     .then(function(res) {
       if (res.ok) {
         if (st) st.innerHTML = ' <span class="badge green">已保存</span>';
@@ -795,6 +853,235 @@ setInterval(loadEvents, 5000);
 setInterval(loadLogs, 10000);
 loadConfig();
 loadDecisionRules();
+// ====== 摄像头播放器 ======
+var _camActive = false;
+var _camMode = "webrtc";
+var _go2rtcPort = 1984;
+var _go2rtcLocal = "http://" + window.location.hostname + ":" + _go2rtcPort;
+var _go2rtcUrls = null;
+
+function startCameraPreview() {
+    var btnStart = document.getElementById("cam-start-btn");
+    var btnStop = document.getElementById("cam-stop-btn");
+    var statusEl = document.getElementById("cam-status");
+    var phEl = document.getElementById("cam-placeholder");
+    var loadEl = document.getElementById("cam-loading");
+    var loadTxt = document.getElementById("cam-loading-text");
+    if (btnStart) btnStart.disabled = true;
+    if (statusEl) { statusEl.textContent = "连接中..."; statusEl.style.color = "var(--yellow)"; }
+    if (loadEl) loadEl.style.display = "flex";
+    if (loadTxt) loadTxt.textContent = "正在启动摄像头...";
+    if (phEl) phEl.style.display = "none";
+
+    fetch("/api/camera/preview/start", { method: "POST" })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.ok) {
+                if (btnStart) btnStart.style.display = "none";
+                if (btnStop) btnStop.style.display = "";
+                _camActive = true;
+                _go2rtcUrls = res.urls || null;
+                if (loadTxt) loadTxt.textContent = "正在加载视频流...";
+                switchCamMode(true);
+                if (statusEl) { statusEl.textContent = "LIVE"; statusEl.style.color = "var(--green)"; }
+                updateRelayUI(res.urls);
+            } else {
+                if (btnStart) btnStart.disabled = false;
+                if (statusEl) { statusEl.textContent = "失败"; statusEl.style.color = "var(--red)"; }
+                if (phEl) phEl.style.display = "flex";
+                if (loadEl) loadEl.style.display = "none";
+                var errEl = document.getElementById("cam-error");
+                var errMsg = document.getElementById("cam-error-msg");
+                if (errEl) errEl.style.display = "flex";
+                if (errMsg) errMsg.textContent = res.error || "启动失败";
+                showToast(res.error || "摄像头拉流失败", "error");
+            }
+        })
+        .catch(function(e) {
+            if (btnStart) btnStart.disabled = false;
+            if (statusEl) { statusEl.textContent = "错误"; statusEl.style.color = "var(--red)"; }
+            var loadEl2 = document.getElementById("cam-loading");
+            var phEl2 = document.getElementById("cam-placeholder");
+            if (loadEl2) loadEl2.style.display = "none";
+            if (phEl2) phEl2.style.display = "flex";
+        });
+}
+
+function stopCameraPreview() {
+    _camActive = false;
+    var btnStart = document.getElementById("cam-start-btn");
+    var btnStop = document.getElementById("cam-stop-btn");
+    var statusEl = document.getElementById("cam-status");
+    var iframe = document.getElementById("cam-iframe");
+    var videoEl = document.getElementById("cam-video-el");
+    if (btnStart) { btnStart.style.display = ""; btnStart.disabled = false; }
+    if (btnStop) btnStop.style.display = "none";
+    if (statusEl) { statusEl.textContent = ""; statusEl.style.color = ""; }
+    if (iframe) { iframe.removeAttribute("src"); iframe.style.display = "none"; }
+    if (videoEl) { videoEl.removeAttribute("src"); videoEl.style.display = "none"; }
+    var phEl = document.getElementById("cam-placeholder");
+    if (phEl) phEl.style.display = "flex";
+    var loadEl = document.getElementById("cam-loading");
+    if (loadEl) loadEl.style.display = "none";
+    var errEl = document.getElementById("cam-error");
+    if (errEl) errEl.style.display = "none";
+    fetch("/api/camera/preview/stop", { method: "POST" }).catch(function(){});
+}
+
+function switchCamMode(fromStart) {
+    var sel = document.getElementById("cam-mode-select");
+    _camMode = sel ? sel.value : "webrtc";
+    if (!_camActive && !fromStart) return;
+
+    var videoEl = document.getElementById("cam-video-el");
+    var iframe = document.getElementById("cam-iframe");
+    var loadEl = document.getElementById("cam-loading");
+    var errEl = document.getElementById("cam-error");
+    var phEl = document.getElementById("cam-placeholder");
+
+    // Hide all first
+    if (videoEl) { videoEl.style.display = "none"; videoEl.removeAttribute("src"); }
+    if (iframe) { iframe.style.display = "none"; iframe.removeAttribute("src"); }
+    if (errEl) errEl.style.display = "none";
+    if (phEl) phEl.style.display = "none";
+
+    if (_camMode === "webrtc") {
+        if (iframe && _go2rtcUrls && _go2rtcUrls.local_webrtc) {
+            iframe.onload = function() {
+                if (loadEl) loadEl.style.display = "none";
+                if (errEl) errEl.style.display = "none";
+                if (phEl) phEl.style.display = "none";
+            };
+            iframe.src = _go2rtcUrls.local_webrtc + "?_=" + Date.now();
+            iframe.style.display = "";
+        }
+    } else if (_camMode === "mjpeg") {
+        if (videoEl) {
+            videoEl.src = "/api/camera/live?_=" + Date.now();
+            videoEl.style.display = "";
+            videoEl.autoplay = true; videoEl.muted = true; videoEl.playsInline = true;
+        }
+    }
+    if (loadEl && _camActive) loadEl.style.display = "flex";
+}
+
+function _onCamPlaying() {
+    var loadEl = document.getElementById("cam-loading");
+    if (loadEl) loadEl.style.display = "none";
+    var errEl = document.getElementById("cam-error");
+    if (errEl) errEl.style.display = "none";
+}
+
+function _onCamError() {
+    var loadEl = document.getElementById("cam-loading");
+    if (loadEl) loadEl.style.display = "none";
+    var errEl = document.getElementById("cam-error");
+    var errMsg = document.getElementById("cam-error-msg");
+    if (errEl) errEl.style.display = "flex";
+    if (errMsg) errMsg.textContent = "视频加载失败，尝试切换模式";
+}
+
+function startCameraRelay() {
+    var btnStart = document.getElementById("relay-start-btn");
+    var btnStop = document.getElementById("relay-stop-btn");
+    var statusEl = document.getElementById("relay-status-text");
+    var loadEl = document.getElementById("relay-loading");
+    var phEl = document.getElementById("relay-placeholder");
+    if (btnStart) btnStart.disabled = true;
+    if (statusEl) { statusEl.textContent = "启动中..."; statusEl.style.color = "var(--yellow)"; }
+    if (loadEl) loadEl.style.display = "flex";
+    if (phEl) phEl.style.display = "none";
+
+    fetch("/api/camera/relay/start", { method: "POST" })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.ok) {
+                if (btnStart) btnStart.style.display = "none";
+                if (btnStop) btnStop.style.display = "";
+                if (statusEl) { statusEl.textContent = "运行中"; statusEl.style.color = "var(--green)"; }
+                updateRelayUI(res.urls);
+                if (loadEl) loadEl.style.display = "none";
+            } else {
+                if (btnStart) btnStart.disabled = false;
+                if (statusEl) { statusEl.textContent = "失败"; statusEl.style.color = "var(--red)"; }
+                if (loadEl) loadEl.style.display = "none";
+                if (phEl) phEl.style.display = "flex";
+                showToast("代理启动失败: " + (res.error || ""), "error");
+            }
+        })
+        .catch(function(e) {
+            if (btnStart) btnStart.disabled = false;
+            if (statusEl) { statusEl.textContent = "网络错误"; statusEl.style.color = "var(--red)"; }
+            if (loadEl) loadEl.style.display = "none";
+            if (phEl) phEl.style.display = "flex";
+        });
+}
+
+function stopCameraRelay() {
+    var btnStart = document.getElementById("relay-start-btn");
+    var btnStop = document.getElementById("relay-stop-btn");
+    var statusEl = document.getElementById("relay-status-text");
+    fetch("/api/camera/relay/stop", { method: "POST" })
+        .then(function() {
+            if (btnStart) { btnStart.style.display = ""; btnStart.disabled = false; }
+            if (btnStop) btnStop.style.display = "none";
+            if (statusEl) { statusEl.textContent = "未启动"; statusEl.style.color = "var(--dim)"; }
+            var rbox = document.getElementById("relay-url-box");
+            if (rbox) rbox.style.display = "none";
+            var rph = document.getElementById("relay-placeholder");
+            if (rph) rph.style.display = "flex";
+            var riframe = document.getElementById("relay-iframe");
+            if (riframe) { riframe.removeAttribute("src"); riframe.style.display = "none"; }
+            var rload = document.getElementById("relay-loading");
+            if (rload) rload.style.display = "none";
+            var rerr = document.getElementById("relay-error");
+            if (rerr) rerr.style.display = "none";
+        })
+        .catch(function() {});
+}
+
+function updateRelayUI(urls) {
+    if (!urls) return;
+    var urlBox = document.getElementById("relay-url-box");
+    var mseInput = document.getElementById("relay-url-mse");
+    if (urlBox) urlBox.style.display = "";
+    if (mseInput) mseInput.value = urls.remote_webrtc || "";
+    var rload = document.getElementById("relay-loading");
+    var rerr = document.getElementById("relay-error");
+    var rph = document.getElementById("relay-placeholder");
+    var riframe = document.getElementById("relay-iframe");
+    if (rload) rload.style.display = "none";
+    if (rerr) rerr.style.display = "none";
+    var webrtcUrl = (urls && urls.local_webrtc) || (_go2rtcUrls && _go2rtcUrls.local_webrtc);
+    if (riframe && webrtcUrl) {
+        riframe.onload = function() {
+            var rl = document.getElementById("relay-loading");
+            if (rl) rl.style.display = "none";
+            var re = document.getElementById("relay-error");
+            if (re) re.style.display = "none";
+        };
+        riframe.src = webrtcUrl;
+        riframe.style.display = "";
+        if (rph) rph.style.display = "none";
+    }
+}
+
+function checkRelayStatus() {
+    fetch("/api/camera/urls")
+        .then(function(r) { return r.json(); })
+        .then(function(urls) {
+            var btnStart = document.getElementById("relay-start-btn");
+            var btnStop = document.getElementById("relay-stop-btn");
+            var statusEl = document.getElementById("relay-status-text");
+            if (urls.running) {
+                if (btnStart) btnStart.style.display = "none";
+                if (btnStop) btnStop.style.display = "";
+                if (statusEl) { statusEl.textContent = "运行中"; statusEl.style.color = "var(--green)"; }
+                if (!_camActive) updateRelayUI(urls);
+            }
+        }).catch(function(){});
+}
+
 </script>
 </body>
 </html>

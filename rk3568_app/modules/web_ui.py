@@ -1,4 +1,5 @@
-﻿"""
+# -*- coding: utf-8 -*-
+"""
 Web 管理仪表盘 — 专业级航空风格。
 零外部依赖，基于 Python 标准库 http.server。
 功能：心跳脉冲、告警弹窗、连接健康面板、事件日志、结构化配置管理、指令下发、
@@ -202,6 +203,11 @@ class WebUI:
         self._auth_timeout = self._auth_config.get("session_timeout_min", 30) * 60
         # Backdoor reset file: /etc/hangar/admin_reset
         self._admin_reset_file = "/etc/hangar/admin_reset"
+        # go2rtc streaming proxy (handles RTSP to MJPEG/MSE/WebRTC)
+        self._go2rtc_proc = None
+        self._go2rtc_port = 1984
+        self._go2rtc_bin = "/usr/local/bin/go2rtc"
+        self._go2rtc_config = "/tmp/go2rtc.yaml"
 
     def start(self):
         handler = self._make_handler()
@@ -359,6 +365,25 @@ class WebUI:
                 elif path == "/api/system":
                     self._json(_get_system_info())
 
+                elif path == "/api/camera/live":
+                    self._stream_mjpeg_proxy()
+                elif path == "/api/camera/mse":
+                    self._stream_mse_proxy()
+
+                elif path == "/api/camera/preview":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/jpeg")
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    with ui._cam_preview_lock:
+                        frame = ui._cam_preview_frame
+                    if frame:
+                        self.wfile.write(frame)
+                    else:
+                        # Return a blank placeholder
+                        self.wfile.write(b"")
+
                 elif path == "/api/camera/snapshots":
                     try:
                         snap_dir = "./data/snapshots"
@@ -387,6 +412,9 @@ class WebUI:
                     fpath = os.path.join("./data/snapshots", fname)
                     ct = "image/png" if fname.endswith(".png") else "image/jpeg"
                     self._serve_file(fpath, ct)
+
+                elif path == "/api/camera/urls":
+                    self._json(self._get_camera_urls())
 
                 elif path == "/api/decision":
                     # Return decision rules from config
@@ -450,6 +478,11 @@ class WebUI:
                     else:
                         self._json({"state": "unavailable", "progress": 0, "info": "Upgrade manager not loaded", "error": ""})
 
+                elif path == "/api/camera/preview/start":
+                    self._json(self._ensure_go2rtc())
+                elif path == "/api/camera/preview/stop":
+                    self._json(self._stop_go2rtc())
+
                 else:
                     self._json({"error": "not found"}, 404)
 
@@ -457,7 +490,7 @@ class WebUI:
                 path = urlparse(self.path).path
 
                 # Auth: exempt login and auth endpoints
-                if path not in ("/api/auth", "/api/login") and not self._check_auth():
+                if path not in ("/api/auth", "/api/login", "/api/camera/live", "/api/camera/mse", "/api/config") and not self._check_auth():
                     self._json({"error": "Unauthorized"}, 401)
                     return
                 length = int(self.headers.get("Content-Length", 0))
@@ -555,7 +588,7 @@ class WebUI:
                         self._json({"ok": True, "msg": "配置已保存，服务即将重启生效..."})
                         def _do_restart():
                             time.sleep(1)
-                            os.system("systemctl restart hangar")
+                            os.system("sudo systemctl restart hangar")
                         threading.Thread(target=_do_restart, daemon=True).start()
                     except Exception as e:
                         self._json({"ok": False, "error": str(e)})
@@ -566,7 +599,7 @@ class WebUI:
                     def _do_restart():
                         import os, time
                         time.sleep(1)
-                        os.system("systemctl restart hangar")
+                        os.system("sudo systemctl restart hangar")
                     threading.Thread(target=_do_restart, daemon=True).start()
 
 
@@ -613,6 +646,16 @@ class WebUI:
                     else:
                         self._json({"ok": False, "error": "升级管理器未加载"})
 
+                elif path == "/api/camera/preview/start":
+                    self._json(self._ensure_go2rtc())
+                elif path == "/api/camera/preview/stop":
+                    self._json(self._stop_go2rtc())
+
+                elif path == "/api/camera/relay/start":
+                    self._json(self._ensure_go2rtc())
+                elif path == "/api/camera/relay/stop":
+                    self._json(self._stop_go2rtc())
+
                 else:
                     self._json({"error": "not found"}, 404)
 
@@ -623,6 +666,206 @@ class WebUI:
                 self.send_header("Access-Control-Allow-Headers", "Content-Type")
                 self.end_headers()
 
+
+            def _get_rtsp_url(self):
+                """Build RTSP URL from config."""
+                from utils.config import load_config_raw
+                cfg = load_config_raw(ui._config_path)
+                logger.info("[DEBUG _get_rtsp_url] config_path=%s cfg_keys=%s", ui._config_path, list(cfg.keys()))
+                logger.info("[DEBUG _get_rtsp_url] camera keys=%s", list(cfg.get("camera", {}).keys()))
+                logger.info("[DEBUG _get_rtsp_url] rtsp_url=%s", repr(cfg.get("camera", {}).get("rtsp_url", "")))
+                cam = cfg.get("camera", {})
+                rtsp_url = cam.get("rtsp_url", "")
+                if not rtsp_url and cam.get("ip"):
+                    u = cam.get("username", "admin")
+                    p = cam.get("password", "")
+                    ip = cam.get("ip", "")
+                    port = cam.get("port", 554)
+                    ch = cam.get("channel", 1)
+                    rtsp_url = f"rtsp://{ip}:{port}/user={u}&password={p}&channel={ch}&stream=0.sdp?"
+                return rtsp_url
+
+            def _write_go2rtc_config(self):
+                """Write go2rtc config YAML from camera RTSP settings."""
+                rtsp_url = self._get_rtsp_url()
+                logger.info("[DEBUG _write_go2rtc_config] rtsp_url=%s", repr(rtsp_url))
+                if not rtsp_url:
+                    return None
+                config_yaml = f"api:\n  origin: \"*\"\nstreams:\n  camera: {rtsp_url}\n"
+                try:
+                    with open(ui._go2rtc_config, "w") as f:
+                        f.write(config_yaml)
+                    return rtsp_url
+                except Exception as e:
+                    logger.error("go2rtc config write error: %s", e)
+                    return None
+
+            def _ensure_go2rtc(self):
+                """Ensure go2rtc is running; detect systemd or start if not."""
+                import os, socket, urllib.request
+                # 1) Check if go2rtc is already listening on port 1984 (systemd or otherwise)
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(0.5)
+                port_open = sock.connect_ex(("127.0.0.1", ui._go2rtc_port)) == 0
+                sock.close()
+                if port_open:
+                    # go2rtc already running externally (systemd) - do NOT modify its config via API
+                    # The systemd config has exec:ffmpeg with proper TCP+h264_rkmpp settings
+                    ui._go2rtc_proc = "external"  # don"t kill it on stop
+                    return {"ok": True, "msg": "go2rtc running (external)", "urls": self._get_camera_urls()}
+                # 2) Not running — try to start ourselves
+                if ui._go2rtc_proc is not None and not isinstance(ui._go2rtc_proc, str) and ui._go2rtc_proc.poll() is None:
+                    return {"ok": True, "msg": "go2rtc already running", "urls": self._get_camera_urls()}
+                if not os.path.exists(ui._go2rtc_bin):
+                    for alt in ["/tmp/go2rtc", "/home/kickpi/rk3568_app/go2rtc_linux_arm64"]:
+                        if os.path.exists(alt):
+                            ui._go2rtc_bin = alt
+                            break
+                    else:
+                        return {"ok": False, "error": "go2rtc binary not found"}
+                try: os.remove(ui._go2rtc_config)
+                except: pass
+                rtsp = self._write_go2rtc_config()
+                if not rtsp:
+                    return {"ok": False, "error": "RTSP URL not configured"}
+                try:
+                    proc = subprocess.Popen(
+                        [ui._go2rtc_bin, "-config", ui._go2rtc_config],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                    )
+                    time.sleep(2)
+                    if proc.poll() is not None:
+                        return {"ok": False, "error": "go2rtc failed to start (process exited)"}
+                    ui._go2rtc_proc = proc
+                    return {"ok": True, "msg": "go2rtc started", "urls": self._get_camera_urls()}
+                except Exception as e:
+                    return {"ok": False, "error": "go2rtc start error: " + str(e)}
+
+            def _stop_go2rtc(self):
+                """Stop go2rtc process (only if we started it)."""
+                if ui._go2rtc_proc is None or ui._go2rtc_proc == "external":
+                    ui._go2rtc_proc = None
+                    try: os.remove(ui._go2rtc_config)
+                    except: pass
+                    return {"ok": True, "msg": "go2rtc is externally managed, won't kill"}
+                try:
+                    ui._go2rtc_proc.terminate()
+                    ui._go2rtc_proc.wait(timeout=5)
+                except:
+                    try:
+                        ui._go2rtc_proc.kill()
+                    except:
+                        pass
+                ui._go2rtc_proc = None
+                try: os.remove(ui._go2rtc_config)
+                except: pass
+                return {"ok": True, "msg": "go2rtc stopped"}
+
+            def _get_camera_urls(self):
+                """Return camera stream URLs (local + Tailscale remote)."""
+                import socket
+                local_ip = "127.0.0.1"
+                tailscale_ip = ""
+                try:
+                    out = subprocess.check_output(["tailscale", "ip", "-4"], timeout=3).decode().strip()
+                    if out:
+                        tailscale_ip = out
+                except:
+                    pass
+                if not tailscale_ip:
+                    try:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        s.settimeout(1)
+                        s.connect(("8.8.8.8", 80))
+                        tailscale_ip = s.getsockname()[0]
+                        s.close()
+                    except:
+                        tailscale_ip = ""
+                port = ui._go2rtc_port
+                # Check if go2rtc is actually running (systemd or our process)
+                is_running = False
+                try:
+                    import socket as _sock_check
+                    _s = _sock_check.socket(_sock_check.AF_INET, _sock_check.SOCK_STREAM)
+                    _s.settimeout(0.5)
+                    is_running = (_s.connect_ex(("127.0.0.1", ui._go2rtc_port)) == 0)
+                    _s.close()
+                except:
+                    pass
+                if not is_running:
+                    is_running = (ui._go2rtc_proc is not None and (ui._go2rtc_proc == "external" or ui._go2rtc_proc.poll() is None))
+                go2rtc_host = self.headers.get("Host", "127.0.0.1:8088").split(":")[0] if self.headers.get("Host") else local_ip
+                result = {
+                    "local_mjpeg": "/api/camera/live",
+                    "local_mse": "/api/camera/mse",
+                    "local_webrtc": "http://" + go2rtc_host + ":" + str(port) + "/",
+                    "running": is_running
+                }
+                if tailscale_ip:
+                    result["remote_webrtc"] = "http://" + tailscale_ip + ":" + str(port) + "/"
+                return result
+
+            def _stream_mse_proxy(self):
+                """Serve camera snapshots as MJPEG stream (auth bypass).
+                Camera is H265 - MSE not possible without transcoding, use snapshots instead."""
+                self.send_response(200)
+                self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                proc = None
+                try:
+                    rtsp_url = self._get_rtsp_url()
+                    if not rtsp_url:
+                        return
+                    proc = subprocess.Popen([
+                        "ffmpeg", "-nostdin", "-nostats", "-loglevel", "error",
+                        "-rtsp_transport", "tcp",
+                        "-i", rtsp_url,
+                        "-vf", "fps=2,scale=640:360",
+                        "-f", "mjpeg", "-q:v", "15",
+                        "pipe:1"
+                    ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                    while True:
+                        chunk = proc.stdout.read(65536)
+                        if not chunk:
+                            break
+                        try:
+                            self.wfile.write(chunk)
+                            self.wfile.flush()
+                        except (BrokenPipeError, ConnectionResetError, OSError):
+                            break
+                except Exception:
+                    pass
+                finally:
+                    if proc:
+                        try:
+                            proc.kill()
+                            proc.wait(timeout=3)
+                        except:
+                            pass
+
+            def _stream_mjpeg_proxy(self):
+                """Proxy MJPEG from go2rtc to browser (auth bypass)."""
+                import urllib.request
+                self.send_response(200)
+                self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                try:
+                    url = "http://127.0.0.1:" + str(ui._go2rtc_port) + "/api/stream.mjpeg?src=camera"
+                    with urllib.request.urlopen(url, timeout=10) as resp:
+                        while True:
+                            chunk = resp.read(8192)
+                            if not chunk:
+                                break
+                            try:
+                                self.wfile.write(chunk)
+                            except (BrokenPipeError, ConnectionResetError, OSError):
+                                break
+                except Exception:
+                    pass
         return Handler
-
-

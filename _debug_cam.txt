@@ -1,0 +1,69 @@
+130:         if cam.get("rtsp_url", ""):
+131:             if not cam["rtsp_url"].startswith("rtsp://"):
+132:                 errors.append("Camera RTSP URL 必须以 rtsp:// 开头")
+205:         # go2rtc streaming proxy (handles RTSP to MJPEG/MSE/WebRTC)
+206:         self._go2rtc_proc = None
+207:         self._go2rtc_port = 1984
+208:         self._go2rtc_bin = "/usr/local/bin/go2rtc"
+209:         self._go2rtc_config = "/tmp/go2rtc.yaml"
+370:                 elif path == "/api/camera/preview":
+376:                     with ui._cam_preview_lock:
+377:                         frame = ui._cam_preview_frame
+478:                 elif path == "/api/camera/preview/start":
+479:                     self._json(self._ensure_go2rtc())
+480:                 elif path == "/api/camera/preview/stop":
+481:                     self._json(self._stop_go2rtc())
+646:                 elif path == "/api/camera/preview/start":
+647:                     self._json(self._ensure_go2rtc())
+648:                 elif path == "/api/camera/preview/stop":
+649:                     self._json(self._stop_go2rtc())
+652:                     self._json(self._ensure_go2rtc())
+654:                     self._json(self._stop_go2rtc())
+667:             def _get_rtsp_url(self):
+668:                 """Build RTSP URL from config."""
+671:                 logger.info("[DEBUG _get_rtsp_url] config_path=%s cfg_keys=%s", ui._config_path, list(cfg.keys()))
+672:                 logger.info("[DEBUG _get_rtsp_url] camera keys=%s", list(cfg.get("camera", {}).keys()))
+673:                 logger.info("[DEBUG _get_rtsp_url] rtsp_url=%s", repr(cfg.get("camera", {}).get("rtsp_url", "")))
+675:                 rtsp_url = cam.get("rtsp_url", "")
+676:                 if not rtsp_url and cam.get("ip"):
+682:                     rtsp_url = f"rtsp://{u}:{p}@{ip}:{port}/Streaming/Channels/{ch}01"
+683:                 return rtsp_url
+685:             def _write_go2rtc_config(self):
+686:                 """Write go2rtc config YAML from camera RTSP settings."""
+687:                 rtsp_url = self._get_rtsp_url()
+688:                 logger.info("[DEBUG _write_go2rtc_config] rtsp_url=%s", repr(rtsp_url))
+689:                 if not rtsp_url:
+691:                 config_yaml = f"streams:\n  camera: {rtsp_url}\n"
+693:                     with open(ui._go2rtc_config, "w") as f:
+695:                     return rtsp_url
+697:                     logger.error("go2rtc config write error: %s", e)
+700:             def _ensure_go2rtc(self):
+701:                 """Ensure go2rtc is running; start if not."""
+703:                 if ui._go2rtc_proc is not None and ui._go2rtc_proc.poll() is None:
+704:                     return {"ok": True, "msg": "go2rtc already running", "urls": self._get_camera_urls()}
+705:                 if not os.path.exists(ui._go2rtc_bin):
+706:                     for alt in ["/tmp/go2rtc", "/home/kickpi/rk3568_app/go2rtc_linux_arm64"]:
+708:                             ui._go2rtc_bin = alt
+711:                         return {"ok": False, "error": "go2rtc binary not found"}
+713:                 try: os.remove(ui._go2rtc_config)
+715:                 rtsp = self._write_go2rtc_config()
+716:                 if not rtsp:
+717:                     return {"ok": False, "error": "RTSP URL not configured"}
+720:                         [ui._go2rtc_bin, "-config", ui._go2rtc_config],
+725:                         return {"ok": False, "error": "go2rtc failed to start (process exited)"}
+726:                     ui._go2rtc_proc = proc
+727:                     return {"ok": True, "msg": "go2rtc started", "urls": self._get_camera_urls()}
+729:                     return {"ok": False, "error": "go2rtc start error: " + str(e)}
+731:             def _stop_go2rtc(self):
+732:                 """Stop go2rtc process."""
+733:                 if ui._go2rtc_proc is not None:
+735:                         ui._go2rtc_proc.terminate()
+736:                         ui._go2rtc_proc.wait(timeout=5)
+739:                             ui._go2rtc_proc.kill()
+742:                     ui._go2rtc_proc = None
+744:                 try: os.remove(ui._go2rtc_config)
+746:                 return {"ok": True, "msg": "go2rtc stopped"}
+768:                 port = ui._go2rtc_port
+773:                     "running": ui._go2rtc_proc is not None and ui._go2rtc_proc.poll() is None
+782:                 """Proxy MJPEG from go2rtc to browser (auth bypass)."""
+791:                     url = "http://127.0.0.1:" + str(ui._go2rtc_port) + "/api/stream.mjpeg?src=camera"
