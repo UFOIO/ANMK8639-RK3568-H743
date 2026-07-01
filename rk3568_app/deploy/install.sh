@@ -1,8 +1,8 @@
-#!/bin/bash
+ï»¿#!/bin/bash
 # =============================================
-# ANMK8639 Hangar Control System - ¿ìËÙ°²×°
-# ÓÃ·¨: sudo bash install.sh
-# Ç°Ìá: setup.sh ÒÑÖ´ĞĞ (venv + pip)
+# ANMK8639 Hangar Control System - å¿«é€Ÿå®‰è£…
+# ç”¨æ³•: sudo bash deploy/install.sh
+# å‰æ: setup_network.sh å·²æ‰§è¡Œ (ç½‘ç»œé€š)
 # =============================================
 set -e
 
@@ -15,51 +15,77 @@ BIN_LINK="/usr/local/bin/${APP_NAME}"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
 VENV="/home/kickpi/hangar_venv"
 
-echo "=== ANMK8639 Hangar Control System °²×° ==="
+if [ "$(id -u)" -ne 0 ]; then
+    echo "è¯·ç”¨ root è·‘: sudo bash $0"
+    exit 1
+fi
 
-echo "[1/6] ´´½¨Ä¿Â¼..."
+echo "=== ANMK8639 Hangar Control System å®‰è£… ==="
+
+echo "[1/7] å®‰è£…ç³»ç»Ÿä¾èµ–..."
+apt-get update -qq
+apt-get install -y python3 python3-pip python3-venv ffmpeg iptables-persistent >/dev/null 2>&1 || true
+
+echo "[2/7] åˆ›å»ºç›®å½•..."
 mkdir -p "${INSTALL_DIR}/data" "${CONFIG_DIR}" "${LOG_DIR}" "${DATA_DIR}/snapshots"
 
-echo "[2/6] ¸´ÖÆÏîÄ¿ÎÄ¼ş..."
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cp "${SCRIPT_DIR}/../main.py" "${INSTALL_DIR}/"
-cp "${SCRIPT_DIR}/../config.yaml" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../core" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../modules" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../protocol" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../utils" "${INSTALL_DIR}/"
-cp -r "${SCRIPT_DIR}/../deploy" "${INSTALL_DIR}/" 2>/dev/null || true
+echo "[3/7] åˆ›å»º Python è™šæ‹Ÿç¯å¢ƒ..."
+if [ ! -d "${VENV}" ]; then
+    sudo -u kickpi python3 -m venv "${VENV}" 2>/dev/null || python3 -m venv "${VENV}"
+fi
 
-echo "[3/6] ÅäÖÃ..."
+echo "[4/7] å¤åˆ¶é¡¹ç›®æ–‡ä»¶..."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SRC_DIR="${SCRIPT_DIR}/.."
+cp "${SRC_DIR}/main.py" "${INSTALL_DIR}/"
+cp "${SRC_DIR}/config.yaml" "${INSTALL_DIR}/"
+cp -r "${SRC_DIR}/modules" "${INSTALL_DIR}/"
+cp -r "${SRC_DIR}/protocol" "${INSTALL_DIR}/"
+cp -r "${SRC_DIR}/utils" "${INSTALL_DIR}/"
+cp -r "${SRC_DIR}/deploy" "${INSTALL_DIR}/" 2>/dev/null || true
+
+echo "[5/7] å®‰è£… Python ä¾èµ–..."
+"${VENV}/bin/pip" install --quiet --upgrade pip
+"${VENV}/bin/pip" install --quiet pyserial paho-mqtt pymavlink pyyaml
+"${VENV}/bin/pip" install --quiet -r "${SRC_DIR}/requirements.txt" 2>/dev/null || true
+
+echo "[6/7] é…ç½®..."
 if [ ! -f "${CONFIG_DIR}/config.yaml" ]; then
     cp "${INSTALL_DIR}/config.yaml" "${CONFIG_DIR}/config.yaml"
-    echo "  -> ´´½¨Ä¬ÈÏÅäÖÃ"
-else
-    echo "  -> ÅäÖÃÒÑ´æÔÚ£¬Ìø¹ı"
+    echo "  -> åˆ›å»ºé»˜è®¤é…ç½® /etc/hangar/config.yaml"
+fi
+if [ ! -f "${CONFIG_DIR}/local.yaml" ]; then
+    cp "${INSTALL_DIR}/config.yaml" "${CONFIG_DIR}/local.yaml"
+    echo "  -> åˆ›å»ºåˆå§‹ local.yaml (ç”¨æˆ·é…ç½®)"
+    echo "  -> æç¤º: ç¼–è¾‘ ${CONFIG_DIR}/local.yaml å¡«å…¥ tailscale_auth_key ç­‰"
 fi
 rm -f "${INSTALL_DIR}/config.yaml"
 ln -sf "${CONFIG_DIR}/config.yaml" "${INSTALL_DIR}/config.yaml"
 
-echo "[4/6] Ä¿Â¼Á´½Ó..."
+# ç›®å½•è½¯é“¾æ¥
 rm -rf "${INSTALL_DIR}/data/logs" 2>/dev/null || true
 rm -rf "${INSTALL_DIR}/data/snapshots" 2>/dev/null || true
 ln -sf "${LOG_DIR}" "${INSTALL_DIR}/data/logs"
 ln -sf "${DATA_DIR}" "${INSTALL_DIR}/data/snapshots"
 
-echo "[5/6] °²×° systemd ·şÎñ..."
+echo "[7/7] å®‰è£… systemd æœåŠ¡..."
 cp "${SCRIPT_DIR}/hangar.service" "${SERVICE_FILE}"
 sed -i "s|/usr/bin/python3|${VENV}/bin/python3|g" "${SERVICE_FILE}"
 sed -i "s|/home/kickpi/hangar_venv/bin/python3|${VENV}/bin/python3|g" "${SERVICE_FILE}"
 systemctl daemon-reload
 systemctl enable "${APP_NAME}" 2>/dev/null || true
 
-echo "[6/6] ´´½¨ CLI ÃüÁî..."
+# CLI å‘½ä»¤
 cp "${SCRIPT_DIR}/hangar-cli.sh" "${BIN_LINK}"
 chmod +x "${BIN_LINK}"
 
 echo ""
 echo "====================================="
-echo "  ? °²×°Íê³É"
-echo "  ÃüÁî: hangar start|stop|restart|reload|status|logs|check|config"
+echo "  âœ“ Hangar å®‰è£…å®Œæˆ"
+echo "====================================="
+echo "  å‘½ä»¤: hangar start|stop|restart|reload|status|logs|check|config"
 echo "  Web:  http://$(hostname -I | awk '{print $1}'):8080"
+echo ""
+echo "  ä¸‹ä¸€æ­¥: ç¼–è¾‘ /etc/hangar/local.yaml å¡« tailscale_auth_key"
+echo "          ç„¶åè·‘: sudo bash deploy/setup_tailscale.sh"
 echo "====================================="

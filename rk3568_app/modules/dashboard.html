@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -338,13 +338,15 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       <div class="cfg-row"><label>通道</label><input id="cfg-camera-channel" type="number" placeholder="1"></div>
       <div class="cfg-row"><label>RTSP URL (直接填写)</label><input id="cfg-camera-rtsp_url" placeholder="rtsp://... (留空则用上方字段拼接)"></div>
     </div>
-    <div class="cfg-section"><h3>云台相机存储 <button class="btn btn-blue btn-sm" onclick="saveSection('gimbal')">[保存]</button> <span id="cfg-save-gimbal"></span></h3>
+    <div class="cfg-section"><h3>云台相机存储 <button class="btn btn-blue btn-sm" onclick="saveSection('gimbal')">[保存]</button> <button class="btn btn-outline btn-sm" onclick="camHealth()" style="margin-left:4px">[测试连接]</button> <span id="cfg-save-gimbal"></span> <span id="cfg-gimbal-health" style="margin-left:8px;font-size:11px;color:var(--dim)"></span></h3>
       <div class="cfg-row"><label>启用</label><input type="checkbox" id="cfg-gimbal-enabled"></div>
       <div class="cfg-row"><label>云台相机IP</label><input id="cfg-gimbal-host" placeholder="192.168.144.25"></div>
       <div class="cfg-row"><label>Web端口</label><input id="cfg-gimbal-web_port" type="number" placeholder="82"></div>
-      <div class="cfg-row"><label>4G模块WiFi名称</label><input id="cfg-gimbal-wifi_ssid" placeholder="WiFi SSID"></div>
-      <div class="cfg-row"><label>4G模块WiFi密码</label><input id="cfg-gimbal-wifi_password" type="password" placeholder="WiFi密码"></div>
-      <div class="cfg-row"><label>代理端口</label><input id="cfg-gimbal-proxy_port" type="number" placeholder="8081"></div>
+      <div class="cfg-row" style="font-size:11px;color:var(--dim);padding-left:160px">
+        说明: WiFi SSID/密码由 setup_network.sh 管理 (NetworkManager)。
+        跨公网访问需在 "VPN / Tailscale" 板块填 auth key 并跑 setup_tailscale.sh。
+        文件代理已整合到主 Web 端口 8080, 无需单独配置。
+      </div>
     </div>
     <div class="cfg-section"><h3>STM32 串口 <button class="btn btn-blue btn-sm" onclick="saveSection('stm32')">[保存]</button> <button class="btn btn-outline btn-sm" onclick="scanSerialPorts()" style="margin-left:4px">[刷新设备]</button> <span id="cfg-save-stm32"></span></h3>
       <div class="cfg-row"><label>串口设备</label>
@@ -815,9 +817,6 @@ function loadConfig() {
       setVal("cfg-gimbal-enabled", (cfg.gimbal_camera||{}).enabled === true);
       setVal("cfg-gimbal-host", (cfg.gimbal_camera||{}).host || "192.168.144.25");
       setVal("cfg-gimbal-web_port", (cfg.gimbal_camera||{}).web_port || 82);
-      setVal("cfg-gimbal-wifi_ssid", (cfg.gimbal_camera||{}).wifi_ssid || "");
-      setVal("cfg-gimbal-wifi_password", (cfg.gimbal_camera||{}).wifi_password || "");
-      setVal("cfg-gimbal-proxy_port", (cfg.gimbal_camera||{}).proxy_port || 8081);
       setVal("cfg-decision-auto_open_on_rtl", (cfg.decision||{}).auto_open_on_rtl ? "true" : "false");
       setVal("cfg-decision-low_battery_threshold", (cfg.decision||{}).low_battery_threshold || 20);
       setVal("cfg-decision-lost_timeout", (cfg.decision||{}).lost_timeout || 30);
@@ -853,7 +852,7 @@ function saveConfig() {
   all.mavlink = {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i"), telem_rate: gv("cfg-mavlink-telem_rate",4,"i")};
   all.camera = {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")};
   all.stm32 = {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")};
-  all.gimbal_camera = {enabled: gv("cfg-gimbal-enabled",false,"c"), host: gv("cfg-gimbal-host","192.168.144.25"), web_port: gv("cfg-gimbal-web_port",82,"i"), wifi_ssid: gv("cfg-gimbal-wifi_ssid",""), wifi_password: gv("cfg-gimbal-wifi_password",""), proxy_port: gv("cfg-gimbal-proxy_port",8081,"i")};
+  all.gimbal_camera = {enabled: gv("cfg-gimbal-enabled",false,"c"), host: gv("cfg-gimbal-host","192.168.144.25"), web_port: gv("cfg-gimbal-web_port",82,"i")};
   all.decision = {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")};
 all.vpn = {tailscale_auth_key: gv("cfg-vpn-tailscale_auth_key","")};
 all.auth = {enabled: gv("cfg-auth-enabled",false,"c"), username: gv("cfg-auth-username","admin"), password: gv("cfg-auth-password",""), session_timeout_min: gv("cfg-auth-session_timeout_min",30,"i")};
@@ -895,7 +894,7 @@ function saveSection(section) {
     stm32: function() {
       return {stm32: {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")}};
     },
-    gimbal: function() { return {gimbal_camera: {enabled: gv("cfg-gimbal-enabled",false,"c"), host: gv("cfg-gimbal-host","192.168.144.25"), web_port: gv("cfg-gimbal-web_port",82,"i"), wifi_ssid: gv("cfg-gimbal-wifi_ssid",""), wifi_password: gv("cfg-gimbal-wifi_password",""), proxy_port: gv("cfg-gimbal-proxy_port",8081,"i")}}; },
+    gimbal: function() { return {gimbal_camera: {enabled: gv("cfg-gimbal-enabled",false,"c"), host: gv("cfg-gimbal-host","192.168.144.25"), web_port: gv("cfg-gimbal-web_port",82,"i")}}; },
     vpn: function() {
       return {vpn: {tailscale_auth_key: gv("cfg-vpn-tailscale_auth_key","")}};
     },
@@ -926,6 +925,23 @@ function saveSection(section) {
     .catch(function(e) { showToast("错误: " + e.message, "error"); });
 }
 
+// ====== 云台存储健康检查 ======
+function camHealth() {
+  var el = document.getElementById("cfg-gimbal-health");
+  if (el) el.textContent = "测试中...";
+  fetch("/api/camera/health").then(function(r) { return r.json(); }).then(function(j) {
+    if (!el) return;
+    if (j.enabled === false) {
+      el.innerHTML = '<span style="color:var(--dim)">未启用</span>';
+    } else if (j.reachable) {
+      el.innerHTML = '<span style="color:var(--green)">✅ 已连接 ' + j.host + '</span>';
+    } else {
+      el.innerHTML = '<span style="color:var(--red)">❌ 未连接 ' + (j.error || "请检查 4G WiFi 和云台供电") + '</span>';
+    }
+  }).catch(function(e) {
+    if (el) el.innerHTML = '<span style="color:var(--red)">❌ ' + e.message + '</span>';
+  });
+}
 // ====== 控制指令 ======
 function sendCmd(cmd) {
   fetch("/api/command", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({cmd:cmd})})

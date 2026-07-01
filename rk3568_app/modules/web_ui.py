@@ -77,6 +77,34 @@ def _load_yaml_config(path):
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
+def _check_gimbal_health():
+    """云台相机健康检查: TCP 连通测试 host:web_port, 超时 3s"""
+    import socket
+    result = {"enabled": False, "reachable": False, "host": "", "port": 82}
+    try:
+        cfg = _load_yaml_config("/etc/hangar/local.yaml")
+        gc = cfg.get("gimbal_camera", {}) or {}
+        host = str(gc.get("host", "192.168.144.25"))
+        port = int(gc.get("web_port", 82) or 82)
+        result["host"] = host
+        result["port"] = port
+        if not gc.get("enabled", False):
+            return result
+        result["enabled"] = True
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(3.0)
+        try:
+            s.connect((host, port))
+            s.close()
+            result["reachable"] = True
+        except Exception as e:
+            result["error"] = str(e)
+        return result
+    except Exception as e:
+        result["error"] = "读取配置失败: " + str(e)
+        return result
+
+
 
 def _validate_config(cfg):
     """校验配置合法性，返回 (ok, errors)。"""
@@ -415,6 +443,9 @@ class WebUI:
 
                 elif path == "/api/camera/urls":
                     self._json(self._get_camera_urls())
+
+                elif path == "/api/camera/health":
+                    self._json(_check_gimbal_health())
 
                 elif path == "/api/decision":
                     # Return decision rules from config

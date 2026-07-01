@@ -1,132 +1,129 @@
-﻿# ===== 日志 =====
+# ===== ��־ =====
 log:
   level: INFO          # DEBUG | INFO | WARNING | ERROR
-  format: "text"        # text | json  (json适合ELK/Loki日志系统)
+  format: "text"        # text | json  (json�ʺ�ELK/Loki��־ϵͳ)
   dir: ./data/logs
   max_days: 30
 
-# ===== MQTT 地面站 =====
+# ===== MQTT ����վ =====
 mqtt:
-  # --- 连接本机 Mosquitto Broker (配合 Tailscale 实现全国通信) ---
-  enabled: false                        # 部署 Mosquitto 后改为 true
-  broker: "127.0.0.1"                   # 本机 Mosquitto
+  # --- ���ӱ��� Mosquitto Broker (��� Tailscale ʵ��ȫ��ͨ��) ---
+  enabled: false                        # ���� Mosquitto ���Ϊ true
+  broker: "127.0.0.1"                   # ���� Mosquitto
   port: 1883
   client_id: "hangar_001"
-  username: "hangar"                    # mosquitto_passwd 创建的用户
-  password: "请填写mosquitto密码"
-  keepalive: 30            # 心跳间隔(秒)
-  status_interval: 5       # 状态上报间隔(秒)
-  topic_prefix: "hangar/"  # MQTT主题前缀
-  qos: 1                   # 默认QoS: 遥测=0, 状态=1, 告警=2
-  reconnect_min: 2         # 重连最小间隔(秒)
-  reconnect_max: 60        # 重连最大间隔(秒)
+  username: "hangar"                    # mosquitto_passwd �������û�
+  password: "����дmosquitto����"
+  keepalive: 30            # �������(��)
+  status_interval: 5       # ״̬�ϱ����(��)
+  topic_prefix: "hangar/"  # MQTT����ǰ׺
+  qos: 1                   # Ĭ��QoS: ң��=0, ״̬=1, �澯=2
+  reconnect_min: 2         # ������С���(��)
+  reconnect_max: 60        # ���������(��)
 
-# ===== MAVLink 无人机 =====
+# ===== MAVLink ���˻� =====
 mavlink:
-  # --- 连接方式: tcp (4G图传) 或 serial (USB直连飞控) ---
+  # --- ���ӷ�ʽ: tcp (4Gͼ��) �� serial (USBֱ���ɿ�) ---
   connection: "tcp"
-  host: "请填写4G模块IP"
+  host: "����д4Gģ��IP"
   port: 5760
   device: "/dev/ttyACM0"
   baudrate: 115200
-  telem_rate: 4            # 遥测刷新率(Hz)，1-10，默认4
-  heartbeat_timeout: 5     # 心跳超时(秒)
-  system_id: 255           # MAVLink系统ID
-  reconnect_interval: 3    # 重连间隔(秒)
+  telem_rate: 4            # ң��ˢ����(Hz)��1-10��Ĭ��4
+  heartbeat_timeout: 5     # ������ʱ(��)
+  system_id: 255           # MAVLinkϵͳID
+  reconnect_interval: 3    # �������(��)
 
-# ===== STM32 串口 =====
+# ===== STM32 ���� =====
 stm32:
-  # 串口设备: 默认/dev/ttyUSB0，避免与MAVLink冲突
+  # �����豸: Ĭ��/dev/ttyUSB0��������MAVLink��ͻ
   port: "/dev/ttyUSB0"
   baudrate: 115200
   data_bits: 8
   parity: "N"              # N|E|O
   stop_bits: 1
-  cmd_timeout: 0.5         # 指令超时(秒)
-  cmd_retry: 3             # 重试次数
-  status_interval: 1       # 主动上报间隔(秒)
+  cmd_timeout: 0.5         # ָ�ʱ(��)
+  cmd_retry: 3             # ���Դ���
+  status_interval: 1       # �����ϱ����(��)
 
-# ===== 摄像头 RTSP =====
+# ===== ����ͷ RTSP =====
 
-# ===== 摄像头 RTSP + go2rtc 流媒体代理 =====
+# ===== ����ͷ RTSP + go2rtc ��ý����� =====
 camera:
   enabled: true
-  # --- RTSP 源 (方式1: 直接URL, 方式2: 结构化字段拼接) ---
+  # --- RTSP Դ (��ʽ1: ֱ��URL, ��ʽ2: �ṹ���ֶ�ƴ��) ---
   rtsp_url: "rtsp://10.6.3.110:554/user=admin&password=&channel=1&stream=0.sdp?"
-  # 以下结构字段在 rtsp_url 为空时使用
+  # ���½ṹ�ֶ��� rtsp_url Ϊ��ʱʹ��
   ip: "10.6.3.110"
   port: 554
   username: "admin"
   password: ""
   channel: 1
-  stream: 0                # 0=主码流 1=子码流
-  # --- go2rtc 流媒体代理 ---
-  go2rtc_enabled: true     # 启用 go2rtc (提供 MJPEG/MSE/WebRTC)
-  go2rtc_port: 1984        # go2rtc API 和流媒体端口
+  stream: 0                # 0=������ 1=������
+  # --- go2rtc ��ý����� ---
+  go2rtc_enabled: true     # ���� go2rtc (�ṩ MJPEG/MSE/WebRTC)
+  go2rtc_port: 1984        # go2rtc API ����ý��˿�
   go2rtc_bin: "/usr/local/bin/go2rtc"
-  # --- 抓图参数 ---
-  snapshot_interval: 30    # 自动抓图间隔(秒), 0=禁用
+  # --- ץͼ���� ---
+  snapshot_interval: 30    # �Զ�ץͼ���(��), 0=����
   snapshot_dir: "./data/snapshots"
-  snapshot_timeout: 10     # ffmpeg超时(秒)
+  snapshot_timeout: 10     # ffmpeg��ʱ(��)
 
 safety:
-  # --- 机库坐标（必填，否则保护逻辑不触发） ---
-  hangar_lat: 0.0             # 机库纬度
-  hangar_lon: 0.0             # 机库经度
-  # --- 断联保护参数 ---
-  lost_grace_period: 8        # 宽限期(秒)：短时波动不触发
-  default_rtl_speed: 8.0      # 默认RTL速度(m/s)：地速=0时兜底
-  door_eta_margin: 15         # 提前开舱(秒)：ETA前N秒开舱
-  # --- 闭环保护参数 ---
-  door_open_timeout: 300      # 开舱后超时(秒)：无人机未到则自动关舱，默认5分钟
-  min_alt_for_protection: 5.0 # 最低保护高度(m)：低于此值认为在地面，不触发开舱
-  min_battery_for_auto_open: 5  # 最低电量(%)：低于此值不开舱（大概率回不来）
+  # --- �������꣨������򱣻��߼��������� ---
+  hangar_lat: 0.0             # ����γ��
+  hangar_lon: 0.0             # ���⾭��
+  # --- ������������ ---
+  lost_grace_period: 8        # ������(��)����ʱ����������
+  default_rtl_speed: 8.0      # Ĭ��RTL�ٶ�(m/s)������=0ʱ����
+  door_eta_margin: 15         # ��ǰ����(��)��ETAǰN�뿪��
+  # --- �ջ��������� ---
+  door_open_timeout: 300      # ���պ�ʱ(��)�����˻�δ�����Զ��زգ�Ĭ��5����
+  min_alt_for_protection: 5.0 # ��ͱ����߶�(m)�����ڴ�ֵ��Ϊ�ڵ��棬����������
+  min_battery_for_auto_open: 5  # ��͵���(%)�����ڴ�ֵ�����գ�����ʻز�����
 
-# ===== 决策引擎 =====
+# ===== �������� =====
 decision:
   auto_open_on_rtl: true
-  low_battery_threshold: 20      # 低电量阈值(%)
-  lost_timeout: 30               # 失联超时(秒)
-  rtl_alt_threshold: 100         # RTL高度阈值(m)
-  door_open_delay: 5             # 开门延迟(秒)
+  low_battery_threshold: 20      # �͵�����ֵ(%)
+  lost_timeout: 30               # ʧ����ʱ(��)
+  rtl_alt_threshold: 100         # RTL�߶���ֵ(m)
+  door_open_delay: 5             # �����ӳ�(��)
 
-# ===== 看门狗 =====
+# ===== ���Ź� =====
 watchdog:
   enabled: true
   device: "/dev/watchdog"
-  feed_interval: 30              # 喂狗间隔(秒)
+  feed_interval: 30              # ι�����(��)
 
-# ===== 认证 =====
+# ===== ��֤ =====
 auth:
-  enabled: false                    # 是否开启登录认证
-  username: "admin"                 # 默认用户名
-  password: "admin123"              # 默认密码（首次登录后建议修改）
-  session_timeout_min: 30           # 会话超时(分钟)，关闭浏览器后超时需重登
+  enabled: false                    # �Ƿ����¼��֤
+  username: "admin"                 # Ĭ���û���
+  password: "admin123"              # Ĭ�����루�״ε�¼�����޸ģ�
+  session_timeout_min: 30           # �Ự��ʱ(����)���ر��������ʱ���ص�
 
 # ===== VPN / Tailscale =====
 vpn:
-  tailscale_auth_key: ""           # Tailscale Auth Key (客户在 tailscale.com 后台生成)
+  tailscale_auth_key: "tskey-auth-kY9tfNDQ4221CNTRL-8SDkF3J94Wi2zojakCMCVib7Q3DkeoxH"           # Tailscale Auth Key (�ͻ��� tailscale.com ��̨����)
 
-# ===== Web 管理看板 =====
+# ===== Web ������� =====
 web_ui:
   host: "0.0.0.0"
   port: 8080
-  api_key: ""                   # Web认证密钥(留空=无需认证)
-  health_refresh: 3              # 健康检查刷新间隔(秒)
-  alert_history: 100             # 告警历史条数
+  api_key: ""                   # Web��֤��Կ(���=������֤)
+  health_refresh: 3              # �������ˢ�¼��(��)
+  alert_history: 100             # �澯��ʷ����
 
-# ===== 升级管理 =====
+# ===== �������� =====
 upgrade:
-  block_size: 1024               # IAP传输块大小
-  block_timeout: 3.0             # 块超时(秒)
-  auto_verify: true              # 升级后自动校验
+  block_size: 1024               # IAP������С
+  block_timeout: 3.0             # �鳬ʱ(��)
+  auto_verify: true              # �������Զ�У��
 
 
-# ===== ?????? (4G??WiFi??) =====
+# ===== 云台相机存储 (SIYI Gimbal via 4G模块 WiFi) =====
 gimbal_camera:
-  enabled: false                # ????????????
-  host: "192.168.144.25"        # ????IP (4G??????)
-  web_port: 82                  # ??Web Server??
-  wifi_ssid: ""                 # 4G??WiFi SSID
-  wifi_password: ""             # 4G??WiFi??
-  proxy_port: 8081              # RK3568??????
+  enabled: false                # 是否启用云台存储代理
+  host: "192.168.144.25"        # 云台相机IP (4G模块WiFi分配的IP)
+  web_port: 82                  # 云台 Web Server 端口
