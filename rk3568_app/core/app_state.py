@@ -1,5 +1,5 @@
 """
-全局应用状态管理：线程安全的状态读写、健康度计算、事件日志。
+鍏ㄥ眬搴旂敤鐘舵€佺鐞嗭細绾跨▼瀹夊叏鐨勭姸鎬佽鍐欍€佸仴搴峰害璁＄畻銆佷簨浠舵棩蹇椼€?
 """
 import threading
 import time
@@ -19,7 +19,9 @@ def _get_system_info():
     global _prev_cpu_fields
     info = {"cpu": 0, "ram_pct": 0, "ram_used": "0M", "ram_total": "0M",
             "disk_pct": 0, "disk_used": "0G", "disk_total": "0G",
-            "mosquitto": False}
+            "mosquitto": False,
+            "cpu_percent": 0, "ram_percent": 0, "disk_percent": 0,
+            "cpu_temp": 0, "network": "unknown"}
     try:
         with open("/proc/stat") as f:
             fields = [int(x) for x in f.readline().split()[1:8]]
@@ -33,7 +35,7 @@ def _get_system_info():
                 if now - _cpu_last_ts >= _CPU_INTERVAL:
                     _cpu_cached = round((td - id_) / td * 100, 1)
                     _cpu_last_ts = now
-                info["cpu"] = _cpu_cached
+                info["cpu"] = _cpu_cached; info["cpu_percent"] = _cpu_cached
         _prev_cpu_fields = fields
     except Exception:
         pass
@@ -47,7 +49,7 @@ def _get_system_info():
         total = mem.get("MemTotal", 1)
         avail = mem.get("MemAvailable", 1)
         used = total - avail
-        info["ram_pct"] = round(used / total * 100, 1)
+        info["ram_pct"] = round(used / total * 100, 1); info["ram_percent"] = info["ram_pct"]
         info["ram_used"] = str(used // 1024) + "M"
         info["ram_total"] = str(total // 1024) + "M"
     except Exception:
@@ -57,12 +59,12 @@ def _get_system_info():
         total = st.f_frsize * st.f_blocks
         free = st.f_frsize * st.f_bavail
         used = total - free
-        info["disk_pct"] = round(used / total * 100, 1)
+        info["disk_pct"] = round(used / total * 100, 1); info["disk_percent"] = info["disk_pct"]
         info["disk_used"] = str(round(used / (1024**3), 1)) + "G"
         info["disk_total"] = str(round(total / (1024**3), 1)) + "G"
     except Exception:
         pass
-    # Mosquitto Broker 进程检测 (端口1883)
+    # Mosquitto Broker 杩涚▼妫€娴?(绔彛1883)
     try:
         with open("/proc/net/tcp", "r") as f:
             for line in f:
@@ -71,12 +73,28 @@ def _get_system_info():
                     break
     except Exception:
         pass
+    # CPU温度
+    try:
+        with open("/sys/class/thermal/thermal_zone0/temp") as f:
+            info["cpu_temp"] = round(int(f.read().strip()) / 1000.0, 1)
+    except Exception:
+        pass
+    # 网络连通性检测
+    try:
+        import socket
+        socket.setdefaulttimeout(1)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(("8.8.8.8", 53))
+        s.close()
+        info["network"] = "connected"
+    except Exception:
+        info["network"] = "disconnected"
     return info
 
 class AppState:
     """
-    线程安全的全局状态存储。
-    使用点号路径访问: state.get("drone.lat")
+    绾跨▼瀹夊叏鐨勫叏灞€鐘舵€佸瓨鍌ㄣ€?
+    浣跨敤鐐瑰彿璺緞璁块棶: state.get("drone.lat")
     """
 
     def __init__(self):
@@ -104,7 +122,7 @@ class AppState:
                 "groundspeed": 0.0,
                 "climb_rate": 0.0,
                 "wp_current": 0,
-                "data_fresh": False,  # 断联后变False，收到位置更新后变True
+                "data_fresh": False,  # 鏂仈鍚庡彉False锛屾敹鍒颁綅缃洿鏂板悗鍙楾rue
                 # Frozen position for dead-reckoning (preserved on disconnect)
                 "frozen_lat": 0.0, "frozen_lon": 0.0, "frozen_alt": 0.0,
                 "frozen_heading": 0, "frozen_groundspeed": 0.0, "frozen_climb_rate": 0.0,
@@ -148,7 +166,9 @@ class AppState:
             "system": {
                 "mqtt_connected": False,
                 "last_mqtt_msg": 0.0,
-                "last_camera_snapshot": 0.0,
+                "last_camera_snapshot": 0,
+            "gimbal_wifi_connected": False,
+            "gimbal_wifi_ssid": "",
                 "cpu_temp": 0.0,
                 "start_time": time.time(),
             },
@@ -282,6 +302,8 @@ class AppState:
                 "alarm_flags": d["hangar"]["alarm_flags"],
             },
             "system": _get_system_info(),
+            "gimbal_wifi": {"connected": d["system"].get("gimbal_wifi_connected", False),
+                            "ssid": d["system"].get("gimbal_wifi_ssid", "")},
             "events": list(self._event_log)[-20:],
         }
 

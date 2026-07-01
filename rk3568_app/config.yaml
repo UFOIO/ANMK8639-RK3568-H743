@@ -120,3 +120,13 @@ upgrade:
   block_size: 1024               # IAP传输块大小
   block_timeout: 3.0             # 块超时(秒)
   auto_verify: true              # 升级后自动校验
+
+
+# ===== ?????? (4G??WiFi??) =====
+gimbal_camera:
+  enabled: false                # ????????????
+  host: "192.168.144.25"        # ????IP (4G??????)
+  web_port: 82                  # ??Web Server??
+  wifi_ssid: ""                 # 4G??WiFi SSID
+  wifi_password: ""             # 4G??WiFi??
+  proxy_port: 8081              # RK3568??????

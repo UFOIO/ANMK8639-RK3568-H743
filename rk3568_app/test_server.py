@@ -33,7 +33,8 @@ H = {
     "uptime": 300,
     "drone": {"mode":"STABILIZE","armed":False,"satellites":12,"gps_fix":3,"alt_rel":45,"groundspeed":5.2,"battery":85,"voltage":24.8,"lat":0,"lon":0,"heading":180,"roll":2.1,"pitch":-1.5,"wp_current":3,"data_fresh":True,"protection":{},"airspeed":5.8,"climb":0.3,"yaw":178,"temperature":32.5,"nav_bearing":180,"wp_distance":120.5,"terrain_alt":50.2,"ekf_health":True,"ekf_horiz":0.12,"ekf_vert":0.08,"vtol_state":0,"landed_state":0,"wind_x":2.1,"wind_y":-1.3,"vib_x":0.05,"vib_y":0.04,"vib_z":0.06,"battery2":84},
     "hangar": {"door":"CLOSED","lock":"LOCKED","temp":25.5,"humidity":62,"alarm_flags":0},
-    "system": {"cpu":15,"ram_pct":45,"ram_used":"1750M","ram_total":"3901M","disk_pct":30,"disk_used":"3.2G","disk_total":"16G","mosquitto":False},
+    "system": {"cpu":15,"ram_pct":45,"ram_used":"1750M","ram_total":"3901M","disk_pct":30,"disk_used":"3.2G","disk_total":"16G","mosquitto":False,"cpu_percent":15,"ram_percent":45,"disk_percent":30,"cpu_temp":48,"network":"connected"},
+        "gimbal_wifi": {"connected": False, "ssid": ""},
     "events": EVENTS,
     "overall": "healthy"
 }

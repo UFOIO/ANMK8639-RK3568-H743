@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -17,6 +17,35 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .hb-dot.warn{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
 .hb-dot.bad{background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse 0.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+/* 4G WiFi 状态指示器 */
+.wifi-dot{width:10px;height:10px;border-radius:50%;display:inline-block;animation:pulse 2s ease-in-out infinite}
+.wifi-dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+.wifi-dot.off{background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse 0.8s ease-in-out infinite}
+#wifi-display{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+/* RK3568 评估板 */
+.eval-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:8px}
+.eval-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;text-align:center;position:relative;overflow:hidden}
+.eval-item .eval-icon{font-size:20px;margin-bottom:4px}
+.eval-item .eval-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px}
+.eval-item .eval-value{font-size:18px;font-weight:700;color:var(--white);margin:2px 0}
+.eval-item .eval-sub{font-size:10px;color:var(--dim)}
+.eval-item.ok{border-color:var(--green)}
+.eval-item.warn{border-color:var(--yellow)}
+.eval-item.bad{border-color:var(--red)}
+.eval-ring{width:50px;height:50px;border-radius:50%;margin:0 auto 4px;position:relative;display:flex;align-items:center;justify-content:center}
+.eval-ring::before{content:"";position:absolute;inset:3px;border-radius:50%;border:3px solid var(--border)}
+.eval-ring.ok::before{border-color:var(--green)}
+.eval-ring.warn::before{border-color:var(--yellow)}
+.eval-ring.bad::before{border-color:var(--red)}
+@keyframes rotateRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.eval-ring.active::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:var(--blue);animation:rotateRing 2s linear infinite}
+/* 脉冲条 */
+@keyframes barPulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.eval-bar-track{width:100%;height:6px;background:var(--bg);border-radius:3px;margin-top:6px;overflow:hidden}
+.eval-bar-fill{height:100%;border-radius:3px;transition:width 0.5s ease}
+.eval-bar-fill.good{background:var(--green)}
+.eval-bar-fill.warn{background:var(--yellow)}
+.eval-bar-fill.bad{background:var(--red);animation:barPulse 0.8s ease-in-out infinite}
 #uptime-display{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
 nav{display:flex;gap:2px;background:var(--bg);border-radius:var(--radius);padding:2px}
 nav button{padding:8px 18px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:13px;border-radius:var(--radius);transition:all 0.2s;font-family:var(--font)}
@@ -102,8 +131,8 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 
 /* Toast */
 #toast-container{position:fixed;top:60px;right:20px;z-index:200;display:flex;flex-direction:column;gap:6px}
-.toast{padding:10px 16px;border-radius:var(--radius);font-size:12px;font-weight:500;animation:slideIn 0.3s ease;display:flex;align-items:center;gap:10px;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
-.toast.info{background:#1a3a4a;border:1px solid var(--blue);color:var(--blue)}
+.toast{z-index:9999;padding:10px 16px;border-radius:var(--radius);font-size:12px;font-weight:500;animation:slideIn 0.3s ease;display:flex;align-items:center;gap:10px;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+.toast.info{background:var(--blue);border:1px solid var(--blue);color:#fff}
 .toast.warn{background:#3a2a1a;border:1px solid var(--yellow);color:var(--yellow)}
 .toast.error{background:#3a1a1a;border:1px solid var(--red);color:var(--red)}
 .toast .tclose{cursor:pointer;font-size:16px;opacity:0.6;margin-left:auto}
@@ -137,10 +166,6 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%%;animation:spin 0.6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn-red{background:var(--red);color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px}
-.toast{position:fixed;top:20px;right:20px;z-index:9999;padding:10px 20px;border-radius:6px;color:#fff;font-size:13px;animation:fadeIn 0.3s}
-.toast.success{background:var(--green)}
-.toast.error{background:var(--red)}
-.toast.info{background:var(--blue)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 
 </style>
@@ -151,6 +176,8 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
     <h1>ANMK8639 机库控制</h1>
     <span class="ver">v1.0</span>
     <span id="hb-dot" class="hb-dot bad"></span>
+    <span id="wifi-dot" class="wifi-dot off"></span>
+    <span id="wifi-display">4G WiFi --</span>
     <span id="uptime-display">运行 --</span>
   </div>
   <nav>
@@ -168,7 +195,22 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
   <div class="grid-2">
     <div class="panel"><h2>>> 无人机遥测</h2><div class="info-grid" id="drone-grid"></div>
     <div id="protection-panel" style="display:none;margin-top:12px;padding:10px;border-radius:6px;border:1px solid;font-size:13px"></div></div>
-    <div class="panel"><h2>>> 机库状态</h2><div class="info-grid" id="hangar-grid"></div></div>
+    <div class="panel"><h2>>> 机库状态</h2><div class="info-grid" id="hangar-grid"></div>
+    <div style="margin-top:14px"><h3 style="font-size:13px;color:var(--dim);margin-bottom:6px">> 舱门控制</h3>
+    <div class="cmd-grid">
+      <button class="btn btn-green" onclick="sendCmd('OPEN_DOOR')">开门</button>
+      <button class="btn btn-red" onclick="sendCmd('CLOSE_DOOR')">关门</button>
+      <button class="btn btn-outline" onclick="sendCmd('LOCK')">上锁</button>
+      <button class="btn btn-outline" onclick="sendCmd('UNLOCK')">解锁</button>
+      <button class="btn btn-green" onclick="sendCmd('START_CHARGE')">开始充电</button>
+      <button class="btn btn-outline" onclick="sendCmd('STOP_CHARGE')">关闭充电</button>
+    </div>
+    <div id="cmd-result"></div></div>
+    <div style="margin-top:10px"><h3 style="font-size:13px;color:var(--dim);margin-bottom:6px">> 系统操作</h3>
+    <div class="cmd-grid">
+      <button class="btn btn-blue" onclick="captureSnapshot()">[手动截图]</button>
+      <button class="btn btn-red" onclick="restartService()">[重启服务]</button> <button class="btn btn-red" onclick="rebootDevice()">[重启终端]</button>
+    </div></div></div>
   </div>
   <div class="panel">
     <h2>>> 系统资源</h2>
@@ -176,6 +218,48 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
     <div class="bar-row"><div class="bar-label"><span>内存</span><span id="sys-ram-v">--</span></div><div class="bar-track"><div class="bar-fill ram" id="sys-ram" style="width:0%"></div></div></div>
     <div class="bar-row"><div class="bar-label"><span>磁盘</span><span id="sys-disk-v">--</span></div><div class="bar-track"><div class="bar-fill disk" id="sys-disk" style="width:0%"></div></div></div>
     <div id="sys-detail">--</div>
+  </div>
+  <div class="panel">
+    <h2>>> RK3568 状态评估板</h2>
+    <div class="eval-board" id="rk-eval-board">
+      <div class="eval-item ok" id="eval-health">
+        <div class="eval-ring ok active" id="eval-ring">
+          <span style="font-size:14px;font-weight:700;color:var(--white)" id="eval-score">--</span>
+        </div>
+        <div class="eval-label">健康评分</div>
+        <div class="eval-sub" id="eval-health-text">评估中...</div>
+      </div>
+      <div class="eval-item ok" id="eval-cpu-item">
+        <div class="eval-icon">🖥</div>
+        <div class="eval-value" id="eval-cpu-val">--%</div>
+        <div class="eval-label">CPU使用率</div>
+        <div class="eval-bar-track"><div class="eval-bar-fill good" id="eval-cpu-bar" style="width:0%"></div></div>
+      </div>
+      <div class="eval-item ok" id="eval-ram-item">
+        <div class="eval-icon">📊</div>
+        <div class="eval-value" id="eval-ram-val">--%</div>
+        <div class="eval-label">内存使用率</div>
+        <div class="eval-bar-track"><div class="eval-bar-fill good" id="eval-ram-bar" style="width:0%"></div></div>
+      </div>
+      <div class="eval-item ok" id="eval-temp-item">
+        <div class="eval-icon">🌡</div>
+        <div class="eval-value" id="eval-temp-val">--°C</div>
+        <div class="eval-label">CPU温度</div>
+        <div class="eval-sub" id="eval-temp-text">正常</div>
+      </div>
+      <div class="eval-item ok" id="eval-disk-item">
+        <div class="eval-icon">💾</div>
+        <div class="eval-value" id="eval-disk-val">--%</div>
+        <div class="eval-label">磁盘使用率</div>
+        <div class="eval-bar-track"><div class="eval-bar-fill good" id="eval-disk-bar" style="width:0%"></div></div>
+      </div>
+      <div class="eval-item ok" id="eval-net-item">
+        <div class="eval-icon">🌐</div>
+        <div class="eval-value" id="eval-net-val">--</div>
+        <div class="eval-label">网络状态</div>
+        <div class="eval-sub" id="eval-net-text">检测中...</div>
+      </div>
+    </div>
   </div>
   <div class="panel">
     <h2>>> 最近事件</h2>
@@ -254,6 +338,14 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
       <div class="cfg-row"><label>通道</label><input id="cfg-camera-channel" type="number" placeholder="1"></div>
       <div class="cfg-row"><label>RTSP URL (直接填写)</label><input id="cfg-camera-rtsp_url" placeholder="rtsp://... (留空则用上方字段拼接)"></div>
     </div>
+    <div class="cfg-section"><h3>云台相机存储 <button class="btn btn-blue btn-sm" onclick="saveSection('gimbal')">[保存]</button> <span id="cfg-save-gimbal"></span></h3>
+      <div class="cfg-row"><label>启用</label><input type="checkbox" id="cfg-gimbal-enabled"></div>
+      <div class="cfg-row"><label>云台相机IP</label><input id="cfg-gimbal-host" placeholder="192.168.144.25"></div>
+      <div class="cfg-row"><label>Web端口</label><input id="cfg-gimbal-web_port" type="number" placeholder="82"></div>
+      <div class="cfg-row"><label>4G模块WiFi名称</label><input id="cfg-gimbal-wifi_ssid" placeholder="WiFi SSID"></div>
+      <div class="cfg-row"><label>4G模块WiFi密码</label><input id="cfg-gimbal-wifi_password" type="password" placeholder="WiFi密码"></div>
+      <div class="cfg-row"><label>代理端口</label><input id="cfg-gimbal-proxy_port" type="number" placeholder="8081"></div>
+    </div>
     <div class="cfg-section"><h3>STM32 串口 <button class="btn btn-blue btn-sm" onclick="saveSection('stm32')">[保存]</button> <button class="btn btn-outline btn-sm" onclick="scanSerialPorts()" style="margin-left:4px">[刷新设备]</button> <span id="cfg-save-stm32"></span></h3>
       <div class="cfg-row"><label>串口设备</label>
         <select id="cfg-stm32-device" onchange="onStmDeviceChange()">
@@ -287,21 +379,6 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 
 <!-- ====== 控制 ====== -->
 <div class="tab" id="tab-control">
-  <div class="panel"><h2>>> 舱门控制</h2>
-    <div class="cmd-grid">
-      <button class="btn btn-green" onclick="sendCmd('OPEN_DOOR')">开门</button>
-      <button class="btn btn-red" onclick="sendCmd('CLOSE_DOOR')">关门</button>
-      <button class="btn btn-outline" onclick="sendCmd('LOCK')">上锁</button>
-      <button class="btn btn-outline" onclick="sendCmd('UNLOCK')">解锁</button>
-    </div>
-    <div id="cmd-result"></div>
-  </div>
-  <div class="panel"><h2>>> 系统操作</h2>
-    <div class="cmd-grid">
-      <button class="btn btn-blue" onclick="captureSnapshot()">[手动截图]</button>
-      <button class="btn btn-red" onclick="restartService()">[重启服务]</button> <button class="btn btn-red" onclick="rebootDevice()">[重启终端]</button>
-    </div>
-  </div>
   <div class="panel"><h2>>> 决策规则</h2><div id="decision-rules" style="color:var(--dim)">从配置加载...</div></div>
 </div>
 
@@ -363,27 +440,124 @@ function switchTab(id, btn) {
 }
 
 // ====== 健康轮询 (每秒) ======
-function pollHealth(){fetch("/api/health").then(function(r){return r.json()}).then(function(d){APP=d;updateConnectionCards(d);updateOverview(d);updateSystemBars(d);updateRecentEvents(d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}).catch(function(e){})};setTimeout(pollHealth,250)
+function _safe(fn,d){try{fn(d)}catch(e){console.error("[dash]",fn.name,e)}} function pollHealth(){fetch("/api/health").then(function(r){return r.json()}).then(function(d){APP=d;_safe(updateConnectionCards,d);_safe(updateOverview,d);_safe(updateSystemBars,d);_safe(updateRecentEvents,d);_safe(updateRKEvalBoard,d);_safe(updateWiFiStatus,d);var u=Math.floor((d.uptime||0)/60),s=Math.floor((d.uptime||0)%60);document.getElementById("uptime-display").textContent="运行 "+u+"分"+s+"秒 | "+(d.overall||"?");var dot=document.getElementById("hb-dot");if(dot){dot.className="hb-dot "+(d.overall==="healthy"?"ok":d.overall==="degraded"?"warn":"bad")}}).catch(function(e){console.error("[dash] fetch:",e)})};setTimeout(pollHealth,250)
+
+// ====== RK3568 评估板 ======
+function updateRKEvalBoard(d) {
+  var cpu = (d.system||{}).cpu_percent;
+  var ram = (d.system||{}).ram_percent;
+  var disk = (d.system||{}).disk_percent;
+  var temp = (d.system||{}).cpu_temp;
+  var net = (d.system||{}).network || "connected";
+  // CPU bar + value
+  if (cpu != null) {
+    var cpuBar = document.getElementById("eval-cpu-bar");
+    var cpuVal = document.getElementById("eval-cpu-val");
+    var cpuItem = document.getElementById("eval-cpu-item");
+    if (cpuVal) { cpuVal.textContent = Math.round(cpu) + "%"; }
+    if (cpuBar) { cpuBar.style.width = Math.round(cpu) + "%"; cpuBar.className = "eval-bar-fill " + (cpu > 80 ? "bad" : cpu > 50 ? "warn" : "good"); }
+    if (cpuItem) { cpuItem.className = "eval-item " + (cpu > 80 ? "bad" : cpu > 50 ? "warn" : "ok"); }
+  }
+  // RAM bar + value
+  if (ram != null) {
+    var ramBar = document.getElementById("eval-ram-bar");
+    var ramVal = document.getElementById("eval-ram-val");
+    var ramItem = document.getElementById("eval-ram-item");
+    if (ramVal) { ramVal.textContent = Math.round(ram) + "%"; }
+    if (ramBar) { ramBar.style.width = Math.round(ram) + "%"; ramBar.className = "eval-bar-fill " + (ram > 80 ? "bad" : ram > 50 ? "warn" : "good"); }
+    if (ramItem) { ramItem.className = "eval-item " + (ram > 80 ? "bad" : ram > 50 ? "warn" : "ok"); }
+  }
+  // Temperature
+  if (temp != null) {
+    var tempVal = document.getElementById("eval-temp-val");
+    var tempText = document.getElementById("eval-temp-text");
+    var tempItem = document.getElementById("eval-temp-item");
+    if (tempVal) { tempVal.textContent = Math.round(temp) + "°C"; }
+    if (tempText) { tempText.textContent = temp > 80 ? "⚠ 过热" : temp > 60 ? "偏高" : "正常"; }
+    if (tempItem) { tempItem.className = "eval-item " + (temp > 80 ? "bad" : temp > 60 ? "warn" : "ok"); }
+  }
+  // Disk
+  if (disk != null) {
+    var diskBar = document.getElementById("eval-disk-bar");
+    var diskVal = document.getElementById("eval-disk-val");
+    var diskItem = document.getElementById("eval-disk-item");
+    if (diskVal) { diskVal.textContent = Math.round(disk) + "%"; }
+    if (diskBar) { diskBar.style.width = Math.round(disk) + "%"; diskBar.className = "eval-bar-fill " + (disk > 85 ? "bad" : disk > 60 ? "warn" : "good"); }
+    if (diskItem) { diskItem.className = "eval-item " + (disk > 85 ? "bad" : disk > 60 ? "warn" : "ok"); }
+  }
+  // Network
+  if (net) {
+    var netVal = document.getElementById("eval-net-val");
+    var netText = document.getElementById("eval-net-text");
+    var netItem = document.getElementById("eval-net-item");
+    var isOnline = net === "connected" || net === "online";
+    if (netVal) { netVal.textContent = isOnline ? "在线" : "离线"; }
+    if (netText) { netText.textContent = isOnline ? "连接正常" : "网络断开"; }
+    if (netItem) { netItem.className = "eval-item " + (isOnline ? "ok" : "bad"); }
+  }
+  // Health score calculation
+  var score = 100;
+  if (cpu != null) { score -= Math.max(0, (cpu - 30) * 0.5); }
+  if (ram != null) { score -= Math.max(0, (ram - 40) * 0.3); }
+  if (temp != null) { score -= Math.max(0, (temp - 50) * 0.8); }
+  if (disk != null) { score -= Math.max(0, (disk - 50) * 0.3); }
+  if (net && net !== "connected" && net !== "online") { score -= 25; }
+  score = Math.max(0, Math.round(score));
+  var scoreEl = document.getElementById("eval-score");
+  var ringEl = document.getElementById("eval-ring");
+  var healthEl = document.getElementById("eval-health");
+  var healthText = document.getElementById("eval-health-text");
+  if (scoreEl) { scoreEl.textContent = score; }
+  if (ringEl) { ringEl.className = "eval-ring " + (score >= 80 ? "ok" : score >= 50 ? "warn" : "bad") + " active"; }
+  if (healthEl) { healthEl.className = "eval-item " + (score >= 80 ? "ok" : score >= 50 ? "warn" : "bad"); }
+  if (healthText) { healthText.textContent = score >= 80 ? "状态良好" : score >= 50 ? "需要注意" : "异常"; }
+}
+
+// ====== 4G WiFi 状态 ======
+function updateWiFiStatus(d) {
+  var wifi = d.gimbal_wifi || {};
+  var dotEl = document.getElementById("wifi-dot");
+  var dispEl = document.getElementById("wifi-display");
+  if (!dotEl || !dispEl) return;
+  if (wifi.connected === true) {
+    dotEl.className = "wifi-dot on";
+    dispEl.textContent = "4G WiFi " + (wifi.ssid ? wifi.ssid : "已连接");
+    dispEl.style.color = "var(--green)";
+  } else {
+    dotEl.className = "wifi-dot off";
+    dispEl.textContent = "4G WiFi 未连接";
+    dispEl.style.color = "var(--dim)";
+  }
+}
+
 
 // ====== 连接状态卡片 ======
-var _MOD_NAMES = {mavlink:"MAVLink 无人机", mqtt:"MQTT 地面站", stm32:"STM32 下位机", camera:"摄像头"};
-var _MOD_LABEL = {mavlink:{k:"last_hb_sec",label:"心跳"}, mqtt:{k:"last_msg_sec",label:"消息"}, stm32:{k:"last_status_sec",label:"状态上报"}, camera:{k:"last_snapshot_sec",label:"截图"}};
+var _MOD_NAMES = {mavlink:"MAVLink 无人机", mqtt:"MQTT 地面站", stm32:"STM32 下位机", camera:"摄像头", gimbal_wifi:"云台存储"};
+var _MOD_LABEL = {mavlink:{k:"last_hb_sec",label:"心跳"}, mqtt:{k:"last_msg_sec",label:"消息"}, stm32:{k:"last_status_sec",label:"状态上报"}, camera:{k:"last_snapshot_sec",label:"截图"}, gimbal_wifi:{k:"ssid",label:"4G WiFi"}};
 
 function updateConnectionCards(d) {
   var c = document.getElementById("conn-cards");
   if (!c) return;
   c.innerHTML = "";
-  ["mavlink","mqtt","stm32","camera"].forEach(function(k) {
+  ["mavlink","mqtt","stm32","camera","gimbal_wifi"].forEach(function(k) {
     var m = d[k] || {};
     var card = h("div", "", "conn-card", c);
-    h("div", "", "dot " + (m.status || "dead"), card);
+    var isGimbal = k === "gimbal_wifi";
+    var dotClass = isGimbal ? (m.connected === true ? "healthy" : "dead") : (m.status || "dead");
+    h("div", "", "dot " + dotClass, card);
     var info = h("div", "", "cinfo", card);
     h("div", _MOD_NAMES[k] || k, "cname", info);
-    var stateText = m.status === "healthy" ? "正常" : m.status === "stale" ? "延迟" : "离线";
-    var stateEl = h("div", stateText, "cstate " + (m.status || "dead"), info);
-    var age = m[_MOD_LABEL[k].k];
-    var ageText = (age != null && age >= 0) ? Math.floor(age) + "秒" : "--";
-    h("div", (_MOD_LABEL[k].label || "") + ": " + ageText, "cage", info);
+    var stateText = isGimbal ? (m.connected === true ? "已连接" : "未连接") : (m.status === "healthy" ? "正常" : m.status === "stale" ? "延迟" : "离线");
+    var stateEl = h("div", stateText, "cstate " + (isGimbal ? (m.connected === true ? "healthy" : "dead") : (m.status || "dead")), info);
+    var label = _MOD_LABEL[k].label || "";
+    var ageText;
+    if (isGimbal) {
+      ageText = m.connected ? (m.ssid || "已连接") : "--";
+    } else {
+      var age = m[_MOD_LABEL[k].k];
+      ageText = (age != null && age >= 0) ? Math.floor(age) + "秒" : "--";
+    }
+    h("div", label + ": " + ageText, "cage", info);
   });
 }
 
@@ -638,6 +812,12 @@ function loadConfig() {
       setVal("cfg-camera-rtsp_url", (cfg.camera||{}).rtsp_url || "");
       _setStm32Device((cfg.stm32||{}).port || "/dev/ttyUSB0");
       setVal("cfg-stm32-baudrate", (cfg.stm32||{}).baudrate || 115200);
+      setVal("cfg-gimbal-enabled", (cfg.gimbal_camera||{}).enabled === true);
+      setVal("cfg-gimbal-host", (cfg.gimbal_camera||{}).host || "192.168.144.25");
+      setVal("cfg-gimbal-web_port", (cfg.gimbal_camera||{}).web_port || 82);
+      setVal("cfg-gimbal-wifi_ssid", (cfg.gimbal_camera||{}).wifi_ssid || "");
+      setVal("cfg-gimbal-wifi_password", (cfg.gimbal_camera||{}).wifi_password || "");
+      setVal("cfg-gimbal-proxy_port", (cfg.gimbal_camera||{}).proxy_port || 8081);
       setVal("cfg-decision-auto_open_on_rtl", (cfg.decision||{}).auto_open_on_rtl ? "true" : "false");
       setVal("cfg-decision-low_battery_threshold", (cfg.decision||{}).low_battery_threshold || 20);
       setVal("cfg-decision-lost_timeout", (cfg.decision||{}).lost_timeout || 30);
@@ -673,6 +853,7 @@ function saveConfig() {
   all.mavlink = {connection: gv("cfg-mavlink-connection","tcp"), host: gv("cfg-mavlink-host",""), port: gv("cfg-mavlink-port",5760,"i"), device: gv("cfg-mavlink-device","/dev/ttyACM0"), baudrate: gv("cfg-mavlink-baudrate",115200,"i"), heartbeat_timeout: gv("cfg-mavlink-hb_timeout",5,"i"), telem_rate: gv("cfg-mavlink-telem_rate",4,"i")};
   all.camera = {ip: gv("cfg-camera-ip",""), port: gv("cfg-camera-port",554,"i"), username: gv("cfg-camera-username",""), password: gv("cfg-camera-password",""), channel: gv("cfg-camera-channel",1,"i"), rtsp_url: gv("cfg-camera-rtsp_url","")};
   all.stm32 = {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")};
+  all.gimbal_camera = {enabled: gv("cfg-gimbal-enabled",false,"c"), host: gv("cfg-gimbal-host","192.168.144.25"), web_port: gv("cfg-gimbal-web_port",82,"i"), wifi_ssid: gv("cfg-gimbal-wifi_ssid",""), wifi_password: gv("cfg-gimbal-wifi_password",""), proxy_port: gv("cfg-gimbal-proxy_port",8081,"i")};
   all.decision = {auto_open_on_rtl: gv("cfg-decision-auto_open_on_rtl",true,"c"), low_battery_threshold: gv("cfg-decision-low_battery_threshold",20,"i"), lost_timeout: gv("cfg-decision-lost_timeout",30,"i")};
 all.vpn = {tailscale_auth_key: gv("cfg-vpn-tailscale_auth_key","")};
 all.auth = {enabled: gv("cfg-auth-enabled",false,"c"), username: gv("cfg-auth-username","admin"), password: gv("cfg-auth-password",""), session_timeout_min: gv("cfg-auth-session_timeout_min",30,"i")};
@@ -714,6 +895,7 @@ function saveSection(section) {
     stm32: function() {
       return {stm32: {port: _getStm32Port(), baudrate: gv("cfg-stm32-baudrate",115200,"i")}};
     },
+    gimbal: function() { return {gimbal_camera: {enabled: gv("cfg-gimbal-enabled",false,"c"), host: gv("cfg-gimbal-host","192.168.144.25"), web_port: gv("cfg-gimbal-web_port",82,"i"), wifi_ssid: gv("cfg-gimbal-wifi_ssid",""), wifi_password: gv("cfg-gimbal-wifi_password",""), proxy_port: gv("cfg-gimbal-proxy_port",8081,"i")}}; },
     vpn: function() {
       return {vpn: {tailscale_auth_key: gv("cfg-vpn-tailscale_auth_key","")}};
     },
