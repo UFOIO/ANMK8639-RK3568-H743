@@ -103,9 +103,32 @@ auth:
   password: "admin123"              # Ĭ�����루�״ε�¼�����޸ģ�
   session_timeout_min: 30           # �Ự��ʱ(����)���ر��������ʱ���ص�
 
+
+
+# ===== 网络配置 (供 setup_network.sh 读) =====
+network:
+  # --- 有线 (eth0 = 客户内网, 192.168.2.x) ---
+  eth0_ip: "192.168.2.78/24"
+  eth0_gw: "192.168.2.1"
+
+  # --- 有线 (eth1 = 海康摄像头 DHCP 服务器) ---
+  eth1_ip: "10.6.3.1/24"
+  eth1_dhcp_start: "10.6.3.100"
+  eth1_dhcp_end: "10.6.3.200"
+
+  # --- WiFi (wlan0 = 4G模块 WiFi, 连上后才能访问云台) ---
+  wifi_ssid: "H4T_4G"                # 4G 模块的 WiFi SSID (出厂默认 H4T_4G)
+  wifi_password: "88888888"          # 4G 模块的 WiFi 密码 (出厂默认 88888888)
+  wifi_never_default: true           # wlan0 不当默认网关, 公网走 eth0
+  wifi_autoconnect: true             # 开机自动连
+
+  # --- 4G 模块分配的网段 (供 setup_tailscale.sh 当 subnet router 广播) ---
+  gimbal_subnet: "192.168.144.0/24"  # 4G模块 WiFi 网段, 客户 PC 通过 Tailscale 自动路由
 # ===== VPN / Tailscale =====
 vpn:
   tailscale_auth_key: "tskey-auth-kY9tfNDQ4221CNTRL-8SDkF3J94Wi2zojakCMCVib7Q3DkeoxH"           # Tailscale Auth Key (�ͻ��� tailscale.com ��̨����)
+
+  accept_dns: false                # 是否接受 Tailscale MagicDNS (一般关掉, 避免覆盖本地 DNS)
 
 # ===== Web ������� =====
 web_ui:
@@ -127,3 +150,4 @@ gimbal_camera:
   enabled: false                # 是否启用云台存储代理
   host: "192.168.144.25"        # 云台相机IP (4G模块WiFi分配的IP)
   web_port: 82                  # 云台 Web Server 端口
+  rtsp_url: "rtsp://192.168.144.25:8554/main.264"  # 云台 RTSP URL (供 go2rtc 透传到公网)

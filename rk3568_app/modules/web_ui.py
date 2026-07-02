@@ -18,6 +18,101 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from http import cookies as http_cookies
 _prev_cpu_web = None
 
+# ---------- 异步任务管理 (供 setup 脚本应用) ----------
+_jobs = {}        # job_id -> {script, status, started, finished, stdout, stderr, exit_code, thread}
+_jobs_lock = threading.Lock()
+
+
+def _run_script(job_id, script_path, args=None, timeout_sec=300):
+    """后台线程跑 setup 脚本, 把 stdout/stderr 累积到 _jobs[job_id]"""
+    job = _jobs.get(job_id)
+    if not job:
+        return
+    job["status"] = "running"
+    job["started"] = time.time()
+    try:
+        cmd = ["sudo", "-n", "bash", script_path]
+        if args:
+            cmd.extend(args)
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd="/home/kickpi/rk3568_app",
+            text=True,
+            bufsize=1,
+        )
+        # 流式读输出, 每行累加到 job["stdout"], 前端轮询就能看到实时日志
+        for line in iter(proc.stdout.readline, ""):
+            with _jobs_lock:
+                job["stdout"] += line
+                job["last_line"] = line.rstrip()
+        proc.stdout.close()
+        proc.wait(timeout=timeout_sec)
+        job["exit_code"] = proc.returncode
+        job["status"] = "done" if proc.returncode == 0 else "failed"
+    except subprocess.TimeoutExpired:
+        job["status"] = "timeout"
+        job["exit_code"] = -1
+        try:
+            proc.kill()
+        except Exception:
+            pass
+    except Exception as e:
+        job["status"] = "error"
+        job["exit_code"] = -1
+        job["stdout"] += "\n[web_ui error] " + str(e) + "\n"
+    finally:
+        job["finished"] = time.time()
+        # 截断过长的日志 (前 8KB)
+        if len(job["stdout"]) > 8192:
+            job["stdout"] = "...[truncated]...\n" + job["stdout"][-8192:]
+
+
+def _start_job(script_name, args=None):
+    """创建 job, 启动后台线程, 返回 job_id"""
+    job_id = str(uuid.uuid4())[:8]
+    script_path = "/home/kickpi/rk3568_app/deploy/" + script_name
+    with _jobs_lock:
+        _jobs[job_id] = {
+            "script": script_name,
+            "status": "pending",
+            "started": 0.0,
+            "finished": 0.0,
+            "stdout": "",
+            "stderr": "",
+            "exit_code": None,
+            "last_line": "",
+        }
+    t = threading.Thread(
+        target=_run_script,
+        args=(job_id, script_path, args),
+        daemon=True,
+    )
+    t.start()
+    return job_id
+
+
+def _get_job(job_id):
+    """获取 job 状态 (前端轮询用)"""
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            return None
+        # 返回副本避免锁内操作
+        return {
+            "job_id": job_id,
+            "script": job["script"],
+            "status": job["status"],
+            "started": job["started"],
+            "finished": job["finished"],
+            "exit_code": job["exit_code"],
+            "stdout": job["stdout"],
+            "last_line": job.get("last_line", ""),
+        }
+
+
+
 def _get_system_info():
     """读取系统资源: CPU(读/proc/stat)/RAM/Disk"""
     global _prev_cpu_web
@@ -82,7 +177,7 @@ def _check_gimbal_health():
     import socket
     result = {"enabled": False, "reachable": False, "host": "", "port": 82}
     try:
-        cfg = _load_yaml_config("/etc/hangar/local.yaml")
+        cfg = _load_yaml_config(ui._config_path)
         gc = cfg.get("gimbal_camera", {}) or {}
         host = str(gc.get("host", "192.168.144.25"))
         port = int(gc.get("web_port", 82) or 82)
@@ -447,6 +542,15 @@ class WebUI:
                 elif path == "/api/camera/health":
                     self._json(_check_gimbal_health())
 
+                elif path.startswith("/api/jobs/") and len(path) > len("/api/jobs/"):
+                    job_id = path[len("/api/jobs/"):]
+                    job = _get_job(job_id)
+                    if job is None:
+                        self._json({"error": "job not found"}, 404)
+                    else:
+                        self._json(job)
+                    self._json(_check_gimbal_health())
+
                 elif path == "/api/decision":
                     # Return decision rules from config
                     try:
@@ -527,7 +631,20 @@ class WebUI:
                 length = int(self.headers.get("Content-Length", 0))
                 body = json.loads(self.rfile.read(length)) if length else {}
 
-                if path == "/api/login":
+                # ---- 异步应用配置 (运行 deploy/setup_*.sh) ----
+                if path == "/api/apply/network":
+                    job_id = _start_job("setup_network.sh")
+                    self._json({"job_id": job_id, "script": "setup_network.sh"})
+
+                elif path == "/api/apply/tailscale":
+                    job_id = _start_job("setup_tailscale.sh")
+                    self._json({"job_id": job_id, "script": "setup_tailscale.sh"})
+
+                elif path == "/api/apply/camera":
+                    job_id = _start_job("setup_camera.sh")
+                    self._json({"job_id": job_id, "script": "setup_camera.sh"})
+
+                elif path == "/api/login":
                     username = body.get("username", "")
                     password = body.get("password", "")
                     ok = False

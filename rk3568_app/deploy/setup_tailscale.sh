@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # =============================================
 # ANMK8639 Tailscale + 子网路由 配置脚本
 # 用法: sudo bash deploy/setup_tailscale.sh
@@ -18,7 +18,24 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-GIMBAL_SUBNET="192.168.144.0/24"
+# 从 local.yaml 读 (可被环境变量覆盖)
+_yaml_get() {
+    local key="$1" default="$2"
+    python3 -c "
+import sys, yaml
+try:
+    cfg = yaml.safe_load(open('/etc/hangar/local.yaml'))
+    v = cfg
+    for k in '$key'.split('.'):
+        v = v.get(k) if isinstance(v, dict) else None
+        if v is None: break
+    print(v if v is not None else '$default')
+except Exception:
+    print('$default')
+" 2>/dev/null
+}
+GIMBAL_SUBNET="$(_yaml_get network.gimbal_subnet "192.168.144.0/24")"
+ACCEPT_DNS="$(_yaml_get vpn.accept_dns "false")"
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "请用 root 跑: sudo bash $0"
@@ -86,7 +103,7 @@ sleep 3
 tailscale up \
     --authkey="${AUTHKEY}" \
     --advertise-routes=${GIMBAL_SUBNET} \
-    --accept-dns=false
+    --accept-dns=${ACCEPT_DNS}
 
 sleep 8
 STATUS=$(tailscale status 2>&1)

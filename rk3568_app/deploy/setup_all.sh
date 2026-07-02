@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # =============================================
 # ANMK8639 一键全自动部署 (Phase 1 ~ 4)
 # 用法: sudo bash deploy/setup_all.sh
@@ -21,6 +21,35 @@ NC='\033[0m'
 if [ "$(id -u)" -ne 0 ]; then
     echo -e "${RED}请用 root 跑: sudo bash $0${NC}"
     exit 1
+fi
+
+# ---------- 检查 sudo NOPASSWD 权限 (供 Web UI [应用配置] 按钮用) ----------
+_real_user="${SUDO_USER:-root}"
+if [ "$_real_user" != "root" ]; then
+    if ! sudo -n -u "$_real_user" sudo -n true 2>/dev/null; then
+        echo -e "${YELLOW}============================================${NC}"
+        echo -e "${YELLOW}⚠ 当前用户 ${_real_user} 没有 sudo NOPASSWD 权限${NC}"
+        echo -e "${YELLOW}============================================${NC}"
+        echo ""
+        echo "Web UI 的 [应用配置] 按钮会调用 'sudo -n bash' 跑本脚本,"
+        echo "如未配置 NOPASSWD 会失败. 解决方法 (任选其一):"
+        echo ""
+        echo "  方法 1: 给 ${_real_user} 加完整 NOPASSWD"
+        echo "    sudo bash -c 'echo \"${_real_user} ALL=(ALL) NOPASSWD: ALL\" > /etc/sudoers.d/${_real_user}'"
+        echo "    sudo chmod 440 /etc/sudoers.d/${_real_user}"
+        echo ""
+        echo "  方法 2: 只允许 ${_real_user} 跑 deploy/setup_*.sh (更安全)"
+        echo "    sudo bash -c 'cat > /etc/sudoers.d/${_real_user}-hangar << EOF"
+echo "${_real_user} ALL=(ALL) NOPASSWD: /bin/bash /home/kickpi/rk3568_app/deploy/setup_*.sh"
+echo "EOF'"
+        echo "    sudo chmod 440 /etc/sudoers.d/${_real_user}-hangar"
+        echo ""
+        echo "  方法 3: 忽略此警告, 每次手动 SSH 跑 setup 脚本 (见 dashboard 提示)"
+        echo ""
+        echo "按 Enter 继续 (脚本仍会跑), 或 Ctrl+C 退出先配置 sudo..."
+        read -t 5 -r _ || true
+        echo ""
+    fi
 fi
 
 echo "============================================"

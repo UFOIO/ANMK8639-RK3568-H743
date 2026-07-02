@@ -91,6 +91,39 @@ def _get_system_info():
         info["network"] = "disconnected"
     return info
 
+def _check_gimbal_wifi_once():
+    """检查 4G WiFi (H4T_4G) 当前是否激活. 返回 (connected: bool, ssid: str)"""
+    try:
+        import subprocess
+        # 1) 查所有 active 的 wifi connection
+        r = subprocess.run(
+            ["nmcli", "-t", "-f", "NAME,STATE", "connection", "show", "--active"],
+            capture_output=True, text=True, timeout=3
+        )
+        if r.returncode == 0:
+            for line in r.stdout.strip().split("\n"):
+                # nmcli -t 输出格式: NAME:STATE
+                parts = line.split(":")
+                if len(parts) >= 2 and parts[0].startswith("H4T") and parts[1] == "activated":
+                    return True, parts[0]
+        # 2) fallback: 查 wlan0 是否有 IP
+        r2 = subprocess.run(
+            ["ip", "-4", "addr", "show", "wlan0"],
+            capture_output=True, text=True, timeout=2
+        )
+        if r2.returncode == 0 and "inet " in r2.stdout:
+            # 提取 SSID (从 iwconfig 拿, 拿不到就用 H4T_4G 占位)
+            r3 = subprocess.run(
+                ["iwgetid", "-r"],
+                capture_output=True, text=True, timeout=2
+            )
+            ssid = r3.stdout.strip() if r3.returncode == 0 else "H4T_4G"
+            return True, ssid
+        return False, ""
+    except Exception:
+        return False, ""
+
+
 class AppState:
     """
     绾跨▼瀹夊叏鐨勫叏灞€鐘舵€佸瓨鍌ㄣ€?
@@ -174,6 +207,10 @@ class AppState:
             },
         }
 
+        # 启动 4G WiFi 状态后台监控线程 (每 10 秒检查一次)
+        self._gimbal_wifi_thread = threading.Thread(target=self._gimbal_wifi_loop, daemon=True)
+        self._gimbal_wifi_thread.start()
+
     def get(self, path: str):
         with self._lock:
             parts = path.split(".")
@@ -214,6 +251,24 @@ class AppState:
     def uptime(self) -> float:
         return time.time() - self._data["system"]["start_time"]
 
+    def _gimbal_wifi_loop(self):
+        """每 10 秒检查一次 4G WiFi 状态, 写入 system.gimbal_wifi_*"""
+        import logging
+        log = logging.getLogger(__name__)
+        while True:
+            try:
+                connected, ssid = _check_gimbal_wifi_once()
+                with self._lock:
+                    old_c = self._data["system"].get("gimbal_wifi_connected")
+                    old_s = self._data["system"].get("gimbal_wifi_ssid", "")
+                    self._data["system"]["gimbal_wifi_connected"] = connected
+                    self._data["system"]["gimbal_wifi_ssid"] = ssid if connected else ""
+                # 状态变化时记日志
+                if old_c != connected:
+                    log.info("4G WiFi 状态变化: %s -> %s (ssid=%s)", old_c, connected, ssid)
+            except Exception:
+                pass
+            time.sleep(10)
     def to_dict(self) -> dict:
         with self._lock:
             result = copy.deepcopy(self._data)

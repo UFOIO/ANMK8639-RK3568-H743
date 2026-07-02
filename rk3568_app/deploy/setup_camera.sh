@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # =============================================
 # ANMK8639 摄像头 + 云台 配置脚本
 # 用法: sudo bash deploy/setup_camera.sh
@@ -12,7 +12,25 @@ set -e
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
+
+# ---------- 从 /etc/hangar/local.yaml 读配置 (若读失败用默认值) ----------
+_yaml_get() {
+    local key="$1" default="$2"
+    python3 -c "
+import sys, yaml
+try:
+    cfg = yaml.safe_load(open('/etc/hangar/local.yaml'))
+    v = cfg
+    for k in '$key'.split('.'):
+        v = v.get(k) if isinstance(v, dict) else None
+        if v is None: break
+    print(v if v is not None else '$default')
+except Exception:
+    print('$default')
+" 2>/dev/null
+}
 
 # ---------- 默认值 (可在 /etc/hangar/local.yaml 覆盖) ----------
 ETH1_IP="10.6.3.1/24"
@@ -20,16 +38,16 @@ DHCP_RANGE_START="10.6.3.100"
 DHCP_RANGE_END="10.6.3.200"
 
 # 海康摄像头 RTSP (默认)
-HIKVISION_IP="10.6.3.110"
-HIKVISION_PORT="554"
-HIKVISION_USER="admin"
-HIKVISION_PASS=""
-HIKVISION_CHANNEL=1
-HIKVISION_STREAM=0
+HIKVISION_IP="$(_yaml_get camera.ip "10.6.3.110")"
+HIKVISION_PORT="$(_yaml_get camera.port "554")"
+HIKVISION_USER="$(_yaml_get camera.username "admin")"
+HIKVISION_PASS="$(_yaml_get camera.password "")"
+HIKVISION_CHANNEL="$(_yaml_get camera.channel "1")"
+HIKVISION_STREAM="$(_yaml_get camera.stream "0")"
 
 # 思翼云台 (4G模块 WiFi 网段)
-GIMBAL_IP="192.168.144.25"
-GIMBAL_WEB_PORT=82
+GIMBAL_IP="$(_yaml_get gimbal_camera.host "192.168.144.25")"
+GIMBAL_WEB_PORT="$(_yaml_get gimbal_camera.web_port "82")"
 GIMBAL_PROXY_PORT=8080  # 整合进 hangar web_ui 主端口
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -107,11 +125,15 @@ echo -e "${GREEN}[4/5]${NC} 配置 go2rtc..."
 mkdir -p /etc/hangar
 RTSP_URL="rtsp://${HIKVISION_IP}:${HIKVISION_PORT}/user=${HIKVISION_USER}&password=${HIKVISION_PASS}&channel=${HIKVISION_CHANNEL}&stream=${HIKVISION_STREAM}.sdp?"
 
+GIMBAL_RTSP_URL="${GIMBAL_RTSP_URL:-rtsp://${GIMBAL_IP}:8554/main.264}"
 cat > /etc/hangar/go2rtc.yaml << EOF
 api:
   origin: "*"
+rtsp:
+  host: 0.0.0.0
 streams:
   camera: "exec:ffmpeg -rtsp_transport tcp -i ${RTSP_URL} -c copy -an -f mpegts pipe:1"
+  gimbal: "${GIMBAL_RTSP_URL}"
 EOF
 
 cp /home/kickpi/rk3568_app/deploy/go2rtc.service /etc/systemd/system/

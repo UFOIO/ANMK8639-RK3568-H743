@@ -2,6 +2,37 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+
+function addGauge(parent, opts) {
+  var item = h("div", "", "gauge-item", parent);
+  item.id = opts.id || "";
+  var lbl = h("div", "", "gauge-label", item);
+  lbl.innerHTML = "<span class=\"gauge-icon\">" + (opts.icon||"") + "</span>" + opts.label;
+  var valEl = h("div", "", "gauge-value", item);
+  if (opts.value == null) {
+    valEl.textContent = "--";
+    valEl.classList.add("warn");
+  } else {
+    var v = opts.format ? opts.format(opts.value) : opts.value;
+    valEl.textContent = v + (opts.unit||"");
+  }
+  var bar = h("div", "", "gauge-bar", item);
+  var fill = h("div", "", "gauge-fill", bar);
+  if (opts.value == null) {
+    fill.style.width = "0%";
+    return;
+  }
+  var range = (opts.max||100) - (opts.min||0);
+  var pct = Math.max(0, Math.min(100, ((opts.value - (opts.min||0)) / range) * 100));
+  setTimeout(function() { fill.style.width = pct.toFixed(1) + "%"; }, 50);
+  var level = "ok";
+  if (opts.danger != null && opts.value >= opts.danger) level = "danger";
+  else if (opts.warn != null && opts.value >= opts.warn) level = "warn";
+  if (level !== "ok") {
+    fill.classList.add(level);
+    valEl.classList.add(level);
+  }
+}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ANMK8639 机库控制系统</title>
 <style>
@@ -123,8 +154,6 @@ main{max-width:1300px;margin:0 auto;padding:16px 20px}
 .gauge-fill{height:100%;background:var(--green);border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1),background .5s;box-shadow:0 0 8px currentColor}
 .gauge-fill.warn{background:var(--yellow)}
 .gauge-fill.danger{background:var(--red);animation:pulse .8s ease-in-out infinite}
-.gauge-fill.placeholder{background:var(--dim)}
-.gauge-value.placeholder{color:var(--dim);font-size:14px;font-weight:400}
 .gauge-value.warn{color:var(--yellow)}
 .gauge-value.danger{color:var(--red);animation:pulse .8s ease-in-out infinite}
 .gauge-icon{display:inline-block;font-size:14px;margin-right:4px;vertical-align:middle}
@@ -553,41 +582,17 @@ function updateRKEvalBoard(d) {
 }
 
 // ====== 4G WiFi 状态 ======
-// 4G WiFi 真实状态: 只看 d.gimbal_wifi.connected (由 app_state 后台线程每 10s 检查写入)
-// 不看 d.system.network (那是公网连通性, 不是 4G WiFi 状态!)
-function getGimbalWifiConnected(d) {
-  if (d.gimbal_wifi && typeof d.gimbal_wifi.connected === "boolean") {
-    return d.gimbal_wifi.connected;
-  }
-  if (d.gimbal_wifi && d.gimbal_wifi.ssid) return true;
-  return false;
-}
-function getGimbalWifiSsid(d) {
-  if (d.gimbal_wifi && d.gimbal_wifi.ssid) return d.gimbal_wifi.ssid;
-  return "";
-}
-// 4G WiFi 真实状态: 只看 d.gimbal_wifi.connected (后台线程每 10s 检查写入)
-// 不看 d.system.network (那是公网连通性, 不是 4G WiFi 状态!)
-function getGimbalWifiConnected(d) {
-  if (d.gimbal_wifi && typeof d.gimbal_wifi.connected === "boolean") return d.gimbal_wifi.connected;
-  if (d.gimbal_wifi && d.gimbal_wifi.ssid) return true;
-  return false;
-}
-function getGimbalWifiSsid(d) {
-  if (d.gimbal_wifi && d.gimbal_wifi.ssid) return d.gimbal_wifi.ssid;
-  return "";
-}
-
 function updateWiFiStatus(d) {
-  // 4G WiFi 状态: 只看 d.gimbal_wifi.connected (后台线程每 10s 检查)
+  // 兼容旧字段 gimbal_wifi, 新字段 d.network 或 d.system.network
+  var wifi = d.gimbal_wifi || {};
+  var sysNet = (d.system && d.system.network) || d.network || "";
   var dotEl = document.getElementById("wifi-dot");
   var dispEl = document.getElementById("wifi-display");
   if (!dotEl || !dispEl) return;
-  var isOn = getGimbalWifiConnected(d);
-  var ssid = getGimbalWifiSsid(d);
+  var isOn = (wifi.connected === true) || sysNet === "connected" || sysNet === "online";
   if (isOn) {
     dotEl.className = "wifi-dot on";
-    dispEl.textContent = "4G WiFi " + (ssid || "已连接");
+    dispEl.textContent = "4G WiFi " + (wifi.ssid || "已连接");
     dispEl.style.color = "var(--green)";
   } else {
     dotEl.className = "wifi-dot off";
@@ -605,9 +610,11 @@ function updateConnectionCards(d) {
   var c = document.getElementById("conn-cards");
   if (!c) return;
   c.innerHTML = "";
-  // gimbal_wifi 真实状态: 只看 d.gimbal_wifi.connected (后台线程)
-  var gwConnected = getGimbalWifiConnected(d);
-  var gwSsid = getGimbalWifiSsid(d) || (gwConnected ? "已连接" : "");
+  // 计算 gimbal_wifi 真实状态 (兼容 d.gimbal_wifi + d.network + d.system.network)
+  var gw = d.gimbal_wifi || {};
+  var sysNet = (d.system && d.system.network) || d.network || "";
+  var gwConnected = (gw.connected === true) || sysNet === "connected" || sysNet === "online";
+  var gwSsid = gw.ssid || (gwConnected ? "已连接" : "");
   ["mavlink","mqtt","stm32","camera","gimbal_wifi"].forEach(function(k) {
     var m = d[k] || {};
     var card = h("div", "", "conn-card", c);
@@ -663,6 +670,7 @@ function updateOverview(d) {
     addInfo(dg, "航向(°)", d.drone.heading != null ? d.drone.heading : "--");
     addInfo(dg, "偏航角(°)", d.drone.yaw != null ? d.drone.yaw : "--");
     addGauge(dg, {id:"g-drone-batt", label:"飞机电池", icon:"🔋", value:d.drone.battery, unit:"%", min:0, max:100, warn:40, danger:20});
+    addGauge(dg, {id:"g-drone-batt2", label:"备用电池", icon:"🔋", value:d.drone.battery2, unit:"%", min:0, max:100, warn:40, danger:20});
     addInfo(dg, "电压(V)", d.drone.voltage != null ? d.drone.voltage : "--");
     addInfo(dg, "解锁状态", d.drone.armed ? "已解锁" : "未解锁");
     addInfo(dg, "纬度", d.drone.lat != null ? d.drone.lat.toFixed(6) : "--");
@@ -709,7 +717,6 @@ function updateOverview(d) {
     addInfo(hg, "锁状态", d.hangar.lock || "--");
     addGauge(hg, {id:"g-hangar-temp", label:"机库温度", icon:"🌡", value:d.hangar.temp, unit:"°C", min:-20, max:80, warn:45, danger:55, format:function(v){return v.toFixed(1)}});
     addGauge(hg, {id:"g-hangar-hum", label:"机库湿度", icon:"💧", value:d.hangar.humidity, unit:"%", min:0, max:100, warn:75, danger:85, format:function(v){return v.toFixed(1)}});
-    addGauge(hg, {id:"g-hangar-charge", label:"充电电量", icon:"⚡", value:d.hangar.charge_pct, unit:"%", min:0, max:100, warn:40, danger:20, placeholder:"等待 STM32 上报"});
     var alarms = d.hangar.alarm_flags;
     if (alarms != null) {
       addInfo(hg, "告警标志", "0x" + alarms.toString(16).toUpperCase());
@@ -724,35 +731,31 @@ function addInfo(parent, label, value) {
 }
 
 function addGauge(parent, opts) {
-  var item = opts.id ? document.getElementById(opts.id) : null;
-  if (!item) {
-    item = h("div", "", "gauge-item", parent);
-    item.id = opts.id || ("gauge-" + Math.random().toString(36).slice(2, 8));
-    var lbl = h("div", "", "gauge-label", item);
-    lbl.innerHTML = "<span class=\"gauge-icon\">" + (opts.icon||"") + "</span>" + opts.label;
-    h("div", "", "gauge-value", item);
-    var bar = h("div", "", "gauge-bar", item);
-    h("div", "", "gauge-fill", bar);
-  }
-  var valEl = item.querySelector(".gauge-value");
-  var fill = item.querySelector(".gauge-fill");
-  var level = "ok";
+  var item = h("div", "", "gauge-item", parent);
+  item.id = opts.id || "";
+  var lbl = h("div", "", "gauge-label", item);
+  lbl.innerHTML = "<span class=\"gauge-icon\">" + (opts.icon||"") + "</span>" + opts.label;
+  var valEl = h("div", "", "gauge-value", item);
   if (opts.value == null) {
-    valEl.textContent = opts.placeholder || "--";
-    fill.style.width = "0%";
-    level = "placeholder";
+    valEl.textContent = "--";
+    valEl.classList.add("warn");
   } else {
     var v = opts.format ? opts.format(opts.value) : opts.value;
     valEl.textContent = v + (opts.unit||"");
-    var range = (opts.max||100) - (opts.min||0);
-    var pct = Math.max(0, Math.min(100, ((opts.value - (opts.min||0)) / range) * 100));
-    fill.style.width = pct.toFixed(1) + "%";
-    if (opts.danger != null && opts.value >= opts.danger) level = "danger";
-    else if (opts.warn != null && opts.value >= opts.warn) level = "warn";
   }
-  valEl.className = "gauge-value" + (level !== "ok" ? " " + level : "");
-  fill.className = "gauge-fill" + (level !== "ok" ? " " + level : "");
+  var bar = h("div", "", "gauge-bar", item);
+  var fill = h("div", "", "gauge-fill", bar);
+  if (opts.value == null) { fill.style.width = "0%"; return; }
+  var range = (opts.max||100) - (opts.min||0);
+  var pct = Math.max(0, Math.min(100, ((opts.value - (opts.min||0)) / range) * 100));
+  setTimeout(function() { fill.style.width = pct.toFixed(1) + "%"; }, 50);
+  var level = "ok";
+  if (opts.danger != null && opts.value >= opts.danger) level = "danger";
+  else if (opts.warn != null && opts.value >= opts.warn) level = "warn";
+  if (level !== "ok") { fill.classList.add(level); valEl.classList.add(level); }
 }
+
+// ====== 系统资源条 ======
 function updateSystemBars(d) {
   if (!d.system) return;
   var cpu = d.system.cpu || 0;

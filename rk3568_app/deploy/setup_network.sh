@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # =============================================
 # ANMK8639 网络配置脚本
 # 用法: sudo bash deploy/setup_network.sh
@@ -16,19 +16,38 @@ set -e
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
-# ---------- 配置参数 (可按需修改) ----------
-ETH0_IP="192.168.2.78/24"
-ETH0_GW="192.168.2.1"
+# ---------- 从 /etc/hangar/local.yaml 读配置 (若读失败用默认值) ----------
+_yaml_get() {
+    # 用法: _yaml_get <section.key> <default>
+    local key="$1" default="$2"
+    python3 -c "
+import sys, yaml
+try:
+    cfg = yaml.safe_load(open('/etc/hangar/local.yaml'))
+    v = cfg
+    for k in '$key'.split('.'):
+        v = v.get(k) if isinstance(v, dict) else None
+        if v is None: break
+    print(v if v is not None else '$default')
+except Exception:
+    print('$default')
+" 2>/dev/null
+}
+
+# ---------- 配置参数 (来自 local.yaml, 也可手动覆盖 export) ----------
+ETH0_IP="$(_yaml_get network.eth0_ip "192.168.2.78/24")"
+ETH0_GW="$(_yaml_get network.eth0_gw "192.168.2.1")"
 ETH0_DNS=("114.114.114.114" "8.8.8.8")
 
-ETH1_IP="10.6.3.1/24"
+ETH1_IP="$(_yaml_get network.eth1_ip "10.6.3.1/24")"
 
-WIFI_SSID="H4T_4G"
-WIFI_PASS="88888888"
+WIFI_SSID="$(_yaml_get network.wifi_ssid "H4T_4G")"
+WIFI_PASS="$(_yaml_get network.wifi_password "88888888")"
 
-GIMBAL_SUBNET="192.168.144.0/24"
+GIMBAL_SUBNET="$(_yaml_get network.gimbal_subnet "192.168.144.0/24")"
 HOME_SUBNET="192.168.2.0/24"
 
 if [ "$(id -u)" -ne 0 ]; then
